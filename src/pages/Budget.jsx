@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
-import { ChevronLeft, ChevronRight, PlusCircle, X, Pencil } from 'lucide-react'
+import { ChevronLeft, ChevronRight, PlusCircle, X, Pencil, Copy } from 'lucide-react'
 
 function BudgetModal({ data, categories, month, year, onClose, onSaved }) {
   const { user } = useAuth()
@@ -38,7 +38,7 @@ function BudgetModal({ data, categories, month, year, onClose, onSaved }) {
         <form onSubmit={handleSave}>
           <div className="form-group">
             <label className="form-label">Kategori Pengeluaran</label>
-            <select className="form-input" value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
+            <select className="form-input" value={categoryId} onChange={e => setCategoryId(e.target.value)} required disabled={!!data}>
               <option value="">Pilih kategori</option>
               {categories.filter(c => c.type === 'expense' || c.type === 'both').map(c => (
                 <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
@@ -72,6 +72,7 @@ export default function Budget() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editData, setEditData] = useState(null)
+  const [copyingOver, setCopyingOver] = useState(false)
 
   useEffect(() => { loadData() }, [month, year])
 
@@ -93,10 +94,77 @@ export default function Budget() {
     ;(txs || []).forEach(t => { sp[t.category_id] = (sp[t.category_id] || 0) + Number(t.amount) })
     setSpending(sp)
     setLoading(false)
+
+    // Auto carry-over: jika bulan ini belum ada budget sama sekali, salin dari bulan sebelumnya
+    if ((bgs || []).length === 0) {
+      await autoCarryOver(month, year)
+    }
+  }
+
+  async function autoCarryOver(currentMonth, currentYear) {
+    // Hitung bulan sebelumnya
+    const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1
+    const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear
+
+    const { data: prevBudgets } = await supabase
+      .from('budgets')
+      .select('*')
+      .eq('month', prevMonth)
+      .eq('year', prevYear)
+
+    if (!prevBudgets || prevBudgets.length === 0) return
+
+    // Salin budget bulan lalu ke bulan ini
+    const newBudgets = prevBudgets.map(b => ({
+      user_id: b.user_id,
+      category_id: b.category_id,
+      amount: b.amount,
+      month: currentMonth,
+      year: currentYear,
+    }))
+
+    const { data: inserted, error } = await supabase
+      .from('budgets')
+      .upsert(newBudgets, { onConflict: 'category_id,month,year' })
+      .select('*, categories(name, icon, color)')
+
+    if (!error && inserted) {
+      setBudgets(inserted)
+    }
+  }
+
+  async function manualCopyOver() {
+    setCopyingOver(true)
+    const prevMonth = month === 1 ? 12 : month - 1
+    const prevYear = month === 1 ? year - 1 : year
+
+    const { data: prevBudgets } = await supabase
+      .from('budgets')
+      .select('*')
+      .eq('month', prevMonth)
+      .eq('year', prevYear)
+
+    if (!prevBudgets || prevBudgets.length === 0) {
+      alert(`Tidak ada budget di ${getMonthName(prevMonth, prevYear)} untuk disalin.`)
+      setCopyingOver(false)
+      return
+    }
+
+    const newBudgets = prevBudgets.map(b => ({
+      user_id: b.user_id,
+      category_id: b.category_id,
+      amount: b.amount,
+      month,
+      year,
+    }))
+
+    await supabase.from('budgets').upsert(newBudgets, { onConflict: 'category_id,month,year' })
+    setCopyingOver(false)
+    loadData()
   }
 
   async function deleteBudget(id) {
-    if (!confirm('Hapus budget ini?')) return
+    if (!confirm('Hapus budget ini? Hanya untuk bulan ini saja.')) return
     await supabase.from('budgets').delete().eq('id', id)
     loadData()
   }
@@ -122,6 +190,10 @@ export default function Budget() {
     return 'var(--green)'
   }
 
+  // Prev month info untuk label tombol salin
+  const prevMonthNum = month === 1 ? 12 : month - 1
+  const prevYearNum = month === 1 ? year - 1 : year
+
   return (
     <div>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -129,9 +201,20 @@ export default function Budget() {
           <h1 className="page-title">Budget</h1>
           <p className="page-sub">Atur batas pengeluaran per kategori</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setEditData(null); setShowModal(true) }}>
-          <PlusCircle size={16} /> Tambah Budget
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            className="btn btn-ghost"
+            onClick={manualCopyOver}
+            disabled={copyingOver}
+            title={`Salin budget dari ${getMonthName(prevMonthNum, prevYearNum)}`}
+          >
+            <Copy size={15} />
+            Salin bulan lalu
+          </button>
+          <button className="btn btn-primary" onClick={() => { setEditData(null); setShowModal(true) }}>
+            <PlusCircle size={16} /> Tambah Budget
+          </button>
+        </div>
       </div>
 
       <div className="month-nav" style={{ marginBottom: 24 }}>
@@ -180,7 +263,7 @@ export default function Budget() {
         <div className="empty-state">
           <div className="icon">🎯</div>
           <h3>Belum ada budget</h3>
-          <p>Tambah budget untuk mulai tracking pengeluaran</p>
+          <p>Budget bulan lalu akan otomatis disalin saat berpindah bulan.<br />Atau klik <strong>Salin bulan lalu</strong> / <strong>Tambah Budget</strong> untuk memulai.</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -208,12 +291,10 @@ export default function Budget() {
                       <span>Budget: <span style={{ color: 'var(--accent)' }}>{formatRupiah(b.amount)}</span></span>
                     </div>
                   </div>
-                  {b.user_id === user.id && (
-                    <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                      <button className="btn btn-icon btn-ghost btn-sm" onClick={() => { setEditData(b); setShowModal(true) }}><Pencil size={13} /></button>
-                      <button className="btn btn-icon btn-danger btn-sm" onClick={() => deleteBudget(b.id)}><X size={13} /></button>
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                    <button className="btn btn-icon btn-ghost btn-sm" onClick={() => { setEditData(b); setShowModal(true) }} title="Edit budget bulan ini"><Pencil size={13} /></button>
+                    <button className="btn btn-icon btn-danger btn-sm" onClick={() => deleteBudget(b.id)} title="Hapus budget bulan ini"><X size={13} /></button>
+                  </div>
                 </div>
               </div>
             )

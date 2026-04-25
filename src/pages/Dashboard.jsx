@@ -6,6 +6,14 @@ import { PlusCircle, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Wallet
 import TransactionModal from '../components/TransactionModal'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from 'recharts'
 
+const TOOLTIP_STYLE = {
+  background: '#2a2a35',
+  border: '1px solid rgba(255,255,255,0.15)',
+  borderRadius: 10,
+  color: '#f0eff4',
+  fontSize: 12,
+}
+
 export default function Dashboard() {
   const { profile } = useAuth()
   const [{ month, year }, setMonthYear] = useState(getCurrentMonth())
@@ -22,7 +30,7 @@ export default function Dashboard() {
     const endDate = new Date(year, month, 0).toISOString().split('T')[0]
 
     const [{ data: txs }, { data: profs }] = await Promise.all([
-      supabase.from('transactions').select('*, categories(name, icon, color)').gte('date', startDate).lte('date', endDate).order('date', { ascending: false }),
+      supabase.from('transactions').select('*, categories(name, icon, color)').gte('date', startDate).lte('date', endDate).order('date', { ascending: false }).order('created_at', { ascending: false }),
       supabase.from('profiles').select('*')
     ])
 
@@ -126,7 +134,13 @@ export default function Dashboard() {
               <BarChart data={dailyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
                 <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickFormatter={v => v >= 1000000 ? `${v/1000000}jt` : `${v/1000}rb`} />
-                <Tooltip formatter={(v) => formatRupiah(v)} contentStyle={{ background: 'var(--bg-card2)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontSize: 12 }} />
+                <Tooltip
+                  formatter={(v) => formatRupiah(v)}
+                  contentStyle={TOOLTIP_STYLE}
+                  itemStyle={{ color: '#f0eff4' }}
+                  labelStyle={{ color: '#c8a97e', fontWeight: 600 }}
+                  cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                />
                 <Bar dataKey="income" name="Pemasukan" fill="var(--green)" radius={[4,4,0,0]} opacity={0.8} />
                 <Bar dataKey="expense" name="Pengeluaran" fill="var(--accent)" radius={[4,4,0,0]} opacity={0.8} />
               </BarChart>
@@ -145,7 +159,12 @@ export default function Dashboard() {
                   <Pie data={pieData} cx="50%" cy="50%" innerRadius={38} outerRadius={60} dataKey="value" strokeWidth={0}>
                     {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                   </Pie>
-                  <Tooltip formatter={(v) => formatRupiah(v)} contentStyle={{ background: 'var(--bg-card2)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12 }} />
+                  <Tooltip
+                    formatter={(v) => formatRupiah(v)}
+                    contentStyle={TOOLTIP_STYLE}
+                    itemStyle={{ color: '#f0eff4' }}
+                    labelStyle={{ color: '#c8a97e', fontWeight: 600 }}
+                  />
                 </PieChart>
               <div style={{ flex: 1 }}>
                 {pieData.map((d, i) => (

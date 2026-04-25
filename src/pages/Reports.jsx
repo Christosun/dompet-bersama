@@ -9,6 +9,14 @@ import {
 
 const PIE_COLORS = ['#c8a97e','#6366f1','#10b981','#f59e0b','#ec4899','#3b82f6','#ef4444','#06b6d4','#84cc16','#e879f9']
 
+const TOOLTIP_STYLE = {
+  background: '#2a2a35',
+  border: '1px solid rgba(255,255,255,0.15)',
+  borderRadius: 10,
+  color: '#f0eff4',
+  fontSize: 12,
+}
+
 export default function Reports() {
   const [{ month, year }, setMonthYear] = useState(getCurrentMonth())
   const [transactions, setTransactions] = useState([])
@@ -93,8 +101,6 @@ export default function Reports() {
     })
   }
 
-  const tooltipStyle = { background: 'var(--bg-card2)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontSize: 12 }
-
   return (
     <div>
       <div className="page-header">
@@ -138,7 +144,13 @@ export default function Reports() {
                 <BarChart data={dailyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} interval={4} />
                   <YAxis tick={{ fontSize: 9, fill: 'var(--text-muted)' }} tickFormatter={v => v >= 1000000 ? `${v/1000000}jt` : `${v/1000}rb`} />
-                  <Tooltip formatter={v => formatRupiah(v)} contentStyle={tooltipStyle} />
+                  <Tooltip
+                    formatter={v => formatRupiah(v)}
+                    contentStyle={TOOLTIP_STYLE}
+                    itemStyle={{ color: '#f0eff4' }}
+                    labelStyle={{ color: '#c8a97e', fontWeight: 600 }}
+                    cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                  />
                   <Bar dataKey="income" name="Pemasukan" fill="var(--green)" radius={[3,3,0,0]} opacity={0.8} />
                   <Bar dataKey="expense" name="Pengeluaran" fill="var(--accent)" radius={[3,3,0,0]} opacity={0.8} />
                   <Legend wrapperStyle={{ fontSize: 11, color: 'var(--text-muted)' }} />
@@ -156,7 +168,12 @@ export default function Reports() {
                       <Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" strokeWidth={0}>
                         {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                       </Pie>
-                      <Tooltip formatter={v => formatRupiah(v)} contentStyle={tooltipStyle} />
+                      <Tooltip
+                        formatter={v => formatRupiah(v)}
+                        contentStyle={TOOLTIP_STYLE}
+                        itemStyle={{ color: '#f0eff4' }}
+                        labelStyle={{ color: '#c8a97e', fontWeight: 600 }}
+                      />
                     </PieChart>
                   <div style={{ flex: 1 }}>
                     {pieData.slice(0, 7).map((d, i) => (
@@ -180,7 +197,12 @@ export default function Reports() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} interval={4} />
                 <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickFormatter={v => v >= 1000000 ? `${(v/1000000).toFixed(1)}jt` : `${v/1000}rb`} />
-                <Tooltip formatter={v => formatRupiah(v)} contentStyle={tooltipStyle} />
+                <Tooltip
+                  formatter={v => formatRupiah(v)}
+                  contentStyle={TOOLTIP_STYLE}
+                  itemStyle={{ color: '#f0eff4' }}
+                  labelStyle={{ color: '#c8a97e', fontWeight: 600 }}
+                />
                 <Line type="monotone" dataKey="total" name="Total Pengeluaran" stroke="var(--accent)" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
