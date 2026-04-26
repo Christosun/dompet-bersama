@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { formatRupiah, getInitials, getAvatarColor, formatShortDate, getCurrentMonth, getMonthName } from '../lib/utils'
-import { PlusCircle, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Wallet } from 'lucide-react'
+import { PlusCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import TransactionModal from '../components/TransactionModal'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from 'recharts'
 
@@ -12,6 +12,142 @@ const TOOLTIP_STYLE = {
   borderRadius: 10,
   color: '#f0eff4',
   fontSize: 12,
+}
+
+function formatDateHeader(dateStr) {
+  const date = new Date(dateStr + 'T00:00:00')
+  const today = new Date()
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  const isToday = date.toDateString() === today.toDateString()
+  const isYesterday = date.toDateString() === yesterday.toDateString()
+
+  if (isToday) return 'Hari Ini'
+  if (isYesterday) return 'Kemarin'
+
+  return new Intl.DateTimeFormat('id-ID', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  }).format(date)
+}
+
+function GroupedTransactions({ transactions, profiles }) {
+  // Group by date
+  const groups = {}
+  transactions.forEach(tx => {
+    if (!groups[tx.date]) groups[tx.date] = []
+    groups[tx.date].push(tx)
+  })
+
+  const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a))
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {sortedDates.map(date => {
+        const txs = groups[date]
+        const dayIncome = txs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
+        const dayExpense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
+        const dayNet = dayIncome - dayExpense
+
+        return (
+          <div key={date} style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            borderRadius: 14,
+            overflow: 'hidden'
+          }}>
+            {/* Date header with daily stats */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '9px 16px',
+              background: 'var(--bg-card2)',
+              borderBottom: '1px solid var(--border)',
+              flexWrap: 'wrap',
+              gap: 8
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>
+                  {formatDateHeader(date)}
+                </span>
+                <span style={{
+                  fontSize: 11,
+                  background: 'var(--bg)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 99,
+                  padding: '2px 8px',
+                  color: 'var(--text-muted)'
+                }}>
+                  {txs.length} transaksi
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                {dayIncome > 0 && (
+                  <span style={{ fontSize: 12, color: 'var(--green)' }}>
+                    +{formatRupiah(dayIncome)}
+                  </span>
+                )}
+                {dayExpense > 0 && (
+                  <span style={{ fontSize: 12, color: 'var(--red)' }}>
+                    -{formatRupiah(dayExpense)}
+                  </span>
+                )}
+                <span style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: dayNet >= 0 ? 'var(--green)' : 'var(--red)',
+                  paddingLeft: 6,
+                  borderLeft: '1px solid var(--border)'
+                }}>
+                  {dayNet >= 0 ? '+' : ''}{formatRupiah(dayNet)}
+                </span>
+              </div>
+            </div>
+
+            {/* Transactions for that date */}
+            <div>
+              {txs.map((tx, i) => {
+                const who = profiles[tx.user_id]
+                return (
+                  <div
+                    key={tx.id}
+                    className="tx-item"
+                    style={{
+                      borderBottom: i < txs.length - 1 ? '1px solid var(--border)' : 'none',
+                      borderRadius: 0,
+                      padding: '10px 16px'
+                    }}
+                  >
+                    <div className="tx-icon" style={{ background: `${tx.categories?.color || '#6b7280'}20` }}>
+                      {tx.categories?.icon || '💰'}
+                    </div>
+                    <div className="tx-info">
+                      <div className="tx-cat">{tx.categories?.name || 'Tidak diketahui'}</div>
+                      <div className="tx-note">{tx.note || '—'}</div>
+                    </div>
+                    <div className="tx-meta">
+                      <div className={`tx-amount ${tx.type === 'income' ? 'pos' : 'neg'}`}>
+                        {tx.type === 'income' ? '+' : '-'}{formatRupiah(tx.amount)}
+                      </div>
+                      {who && (
+                        <div className="tx-who">
+                          <div className="avatar" style={{ width: 16, height: 16, fontSize: 8, background: getAvatarColor(who.name) }}>
+                            {getInitials(who.name)}
+                          </div>
+                          {who.name.split(' ')[0]}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 export default function Dashboard() {
@@ -55,7 +191,7 @@ export default function Dashboard() {
 
   const PIE_COLORS = ['#c8a97e', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#3b82f6']
 
-  // Daily trend for bar chart (last 7 days with data)
+  // Daily trend for bar chart
   const dailyMap = {}
   transactions.forEach(t => {
     dailyMap[t.date] = dailyMap[t.date] || { date: t.date, expense: 0, income: 0 }
@@ -76,7 +212,10 @@ export default function Dashboard() {
     })
   }
 
-  const recent = transactions.slice(0, 8)
+  // Show max 5 recent dates on dashboard
+  const allDates = [...new Set(transactions.map(t => t.date))].sort((a, b) => b.localeCompare(a))
+  const recentDates = allDates.slice(0, 5)
+  const recentTransactions = transactions.filter(t => recentDates.includes(t.date))
 
   return (
     <div>
@@ -124,7 +263,6 @@ export default function Dashboard() {
 
       {/* Charts row */}
       <div className="grid-2" style={{ marginBottom: 24 }}>
-        {/* Bar chart */}
         <div className="card">
           <div className="section-title">Tren Harian</div>
           {dailyData.length === 0 ? (
@@ -148,7 +286,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Pie chart */}
         <div className="card">
           <div className="section-title">Pengeluaran per Kategori</div>
           {pieData.length === 0 ? (
@@ -156,16 +293,16 @@ export default function Dashboard() {
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <PieChart width={140} height={140}>
-                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={38} outerRadius={60} dataKey="value" strokeWidth={0}>
-                    {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip
-                    formatter={(v) => formatRupiah(v)}
-                    contentStyle={TOOLTIP_STYLE}
-                    itemStyle={{ color: '#f0eff4' }}
-                    labelStyle={{ color: '#c8a97e', fontWeight: 600 }}
-                  />
-                </PieChart>
+                <Pie data={pieData} cx="50%" cy="50%" innerRadius={38} outerRadius={60} dataKey="value" strokeWidth={0}>
+                  {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                </Pie>
+                <Tooltip
+                  formatter={(v) => formatRupiah(v)}
+                  contentStyle={TOOLTIP_STYLE}
+                  itemStyle={{ color: '#f0eff4' }}
+                  labelStyle={{ color: '#c8a97e', fontWeight: 600 }}
+                />
+              </PieChart>
               <div style={{ flex: 1 }}>
                 {pieData.map((d, i) => (
                   <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -180,51 +317,23 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Recent transactions */}
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div className="section-title" style={{ margin: 0 }}>Transaksi Terakhir</div>
-          <a href="/transactions" style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>Lihat semua →</a>
-        </div>
+      {/* Recent transactions — grouped by date */}
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="section-title" style={{ margin: 0 }}>Transaksi Terakhir</div>
+        <a href="/transactions" style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>Lihat semua →</a>
+      </div>
 
-        {loading ? <div className="spinner" /> : recent.length === 0 ? (
+      {loading ? <div className="spinner" /> : recentTransactions.length === 0 ? (
+        <div className="card">
           <div className="empty-state">
             <div className="icon">💸</div>
             <h3>Belum ada transaksi</h3>
             <p>Mulai catat pengeluaran atau pemasukan</p>
           </div>
-        ) : (
-          <div className="tx-list">
-            {recent.map(tx => {
-              const who = profiles[tx.user_id]
-              return (
-                <div className="tx-item" key={tx.id}>
-                  <div className="tx-icon" style={{ background: `${tx.categories?.color || '#6b7280'}20` }}>
-                    {tx.categories?.icon || '💰'}
-                  </div>
-                  <div className="tx-info">
-                    <div className="tx-cat">{tx.categories?.name || 'Tidak diketahui'}</div>
-                    <div className="tx-note">{tx.note || formatShortDate(tx.date)}</div>
-                  </div>
-                  <div className="tx-meta">
-                    <div className={`tx-amount ${tx.type === 'income' ? 'pos' : 'neg'}`}>
-                      {tx.type === 'income' ? '+' : '-'}{formatRupiah(tx.amount)}
-                    </div>
-                    {who && (
-                      <div className="tx-who">
-                        <div className="avatar" style={{ width: 16, height: 16, fontSize: 8, background: getAvatarColor(who.name) }}>
-                          {getInitials(who.name)}
-                        </div>
-                        {who.name.split(' ')[0]}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <GroupedTransactions transactions={recentTransactions} profiles={profiles} />
+      )}
 
       {showModal && <TransactionModal onClose={() => setShowModal(false)} onSaved={loadData} />}
     </div>
