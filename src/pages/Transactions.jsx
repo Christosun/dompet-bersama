@@ -14,11 +14,22 @@ function formatDateHeader(dateStr) {
   const isToday = date.toDateString() === today.toDateString()
   const isYesterday = date.toDateString() === yesterday.toDateString()
 
-  if (isToday) return 'Hari Ini'
-  if (isYesterday) return 'Kemarin'
+  // Format tanggal lengkap (tanpa weekday biar tidak dobel)
+  const formattedDate = new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(date)
 
+  if (isToday) return `Hari Ini • ${formattedDate}`
+  if (isYesterday) return `Kemarin • ${formattedDate}`
+
+  // Untuk hari lain tetap pakai format lengkap + weekday
   return new Intl.DateTimeFormat('id-ID', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
   }).format(date)
 }
 
