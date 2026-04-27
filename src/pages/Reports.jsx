@@ -1,14 +1,12 @@
-import { useState, useEffect, useMemo, useCallback, memo, lazy, Suspense } from 'react'
+import { useState, useEffect, useMemo, useCallback, memo } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-
-// Lazy-load recharts — huge bundle, only load when Reports is visited
-const {
+import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
   LineChart, Line, CartesianGrid, ReferenceLine, Area, AreaChart, ComposedChart
-} = await import('recharts').catch(() => ({}))
+} from 'recharts'
 
 const PIE_COLORS = ['#c8a97e','#6366f1','#10b981','#f59e0b','#ec4899','#3b82f6','#ef4444','#06b6d4','#84cc16','#e879f9']
 
