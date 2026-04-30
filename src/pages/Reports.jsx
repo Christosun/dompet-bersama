@@ -23,7 +23,8 @@ const TOOLTIP_STYLE = {
 // Helper: get start/end date strings for a given month/year
 function monthRange(month, year) {
   const start = `${year}-${String(month).padStart(2, '0')}-01`
-  const end = new Date(year, month, 0).toISOString().split('T')[0]
+  //const end = new Date(year, month, 0).toISOString().split('T')[0]
+  const end = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
   return { start, end }
 }
 

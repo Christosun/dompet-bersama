@@ -79,7 +79,8 @@ export default function Budget() {
   async function loadData() {
     setLoading(true)
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-    const endDate = new Date(year, month, 0).toISOString().split('T')[0]
+    //const endDate = new Date(year, month, 0).toISOString().split('T')[0]
+    const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
 
     const [{ data: bgs }, { data: cats }, { data: txs }] = await Promise.all([
       supabase.from('budgets').select('*, categories(name, icon, color)').eq('month', month).eq('year', year),

@@ -58,7 +58,8 @@ export default function Transactions() {
   async function loadAll() {
     setLoading(true)
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-    const endDate = new Date(year, month, 0).toISOString().split('T')[0]
+    //const endDate = new Date(year, month, 0).toISOString().split('T')[0]
+    const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
 
     const [{ data: txs }, { data: cats }, { data: profs }] = await Promise.all([
       supabase

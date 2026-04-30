@@ -174,7 +174,8 @@ export default function Dashboard() {
   async function loadData() {
     setLoading(true)
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-    const endDate = new Date(year, month, 0).toISOString().split('T')[0]
+    //const endDate = new Date(year, month, 0).toISOString().split('T')[0]
+    const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
 
     const [{ data: txs }, { data: profs }] = await Promise.all([
       supabase.from('transactions').select('*, categories(name, icon, color)').gte('date', startDate).lte('date', endDate).order('date', { ascending: false }).order('created_at', { ascending: false }),
