@@ -169,18 +169,28 @@ export default function Dashboard() {
   const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(true)
   const realtimeRef = useRef(null)
+  const loadDataRef = useRef(null)
+
+  useEffect(() => { loadDataRef.current = loadData })
 
   useEffect(() => {
     loadData()
     setupRealtime()
-    return () => { realtimeRef.current?.unsubscribe() }
+
+    function handleFabSaved() { loadDataRef.current?.() }
+    window.addEventListener('fab-transaction-saved', handleFabSaved)
+
+    return () => {
+      realtimeRef.current?.unsubscribe()
+      window.removeEventListener('fab-transaction-saved', handleFabSaved)
+    }
   }, [month, year])
 
   function setupRealtime() {
     realtimeRef.current?.unsubscribe()
     realtimeRef.current = supabase
       .channel(`dashboard-${month}-${year}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => loadDataRef.current?.())
       .subscribe()
   }
 

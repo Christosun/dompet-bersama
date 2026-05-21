@@ -45,18 +45,30 @@ export default function Transactions() {
   const [search, setSearch] = useState('')
 
   const realtimeRef = useRef(null)
+  const loadAllRef = useRef(null)
+
+  // Selalu simpan referensi loadAll terbaru agar event listener tidak stale
+  useEffect(() => { loadAllRef.current = loadAll })
 
   useEffect(() => {
     loadAll()
     setupRealtime()
-    return () => { realtimeRef.current?.unsubscribe() }
+
+    // Dengarkan event dari FAB di Layout
+    function handleFabSaved() { loadAllRef.current?.() }
+    window.addEventListener('fab-transaction-saved', handleFabSaved)
+
+    return () => {
+      realtimeRef.current?.unsubscribe()
+      window.removeEventListener('fab-transaction-saved', handleFabSaved)
+    }
   }, [month, year])
 
   function setupRealtime() {
     realtimeRef.current?.unsubscribe()
     realtimeRef.current = supabase
       .channel(`transactions-page-${month}-${year}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => loadAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => loadAllRef.current?.())
       .subscribe()
   }
 

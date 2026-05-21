@@ -96,7 +96,13 @@ export default function Layout() {
       </button>
 
       {showQuickAdd && (
-        <TransactionModal onClose={() => setShowQuickAdd(false)} onSaved={() => setShowQuickAdd(false)} />
+        <TransactionModal
+          onClose={() => setShowQuickAdd(false)}
+          onSaved={() => {
+            setShowQuickAdd(false)
+            window.dispatchEvent(new CustomEvent('fab-transaction-saved'))
+          }}
+        />
       )}
 
       {/* Mobile Bottom Navigation — scrollable horizontal */}
