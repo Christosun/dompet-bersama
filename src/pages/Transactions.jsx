@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
@@ -44,7 +44,21 @@ export default function Transactions() {
   const [dateTo, setDateTo] = useState('')
   const [search, setSearch] = useState('')
 
-  useEffect(() => { loadAll() }, [month, year])
+  const realtimeRef = useRef(null)
+
+  useEffect(() => {
+    loadAll()
+    setupRealtime()
+    return () => { realtimeRef.current?.unsubscribe() }
+  }, [month, year])
+
+  function setupRealtime() {
+    realtimeRef.current?.unsubscribe()
+    realtimeRef.current = supabase
+      .channel(`transactions-page-${month}-${year}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => loadAll())
+      .subscribe()
+  }
 
   async function loadAll() {
     setLoading(true)
