@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useConfirm } from '../contexts/ConfirmContext'
-import { formatRupiah, getInitials, getAvatarColor, getCurrentMonth, getMonthName } from '../lib/utils'
+import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
+import Avatar from '../components/Avatar'
 import { PlusCircle, Search, Trash2, Pencil, ChevronLeft, ChevronRight, SearchX } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
 import TransactionModal from '../components/TransactionModal'
@@ -305,9 +306,7 @@ export default function Transactions() {
                           </div>
                           {who && (
                             <div className="tx-who">
-                              <div className="avatar" style={{ width: 16, height: 16, fontSize: 8, background: getAvatarColor(who.name) }}>
-                                {getInitials(who.name)}
-                              </div>
+                              <Avatar name={who.name} size={16} tooltip />
                               {who.name.split(' ')[0]}
                             </div>
                           )}

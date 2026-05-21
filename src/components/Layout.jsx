@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useConfirm } from '../contexts/ConfirmContext'
-import { getInitials, getAvatarColor } from '../lib/utils'
 import { LayoutDashboard, ArrowLeftRight, Tag, Target, BarChart2, LogOut, Trophy, RefreshCw, Plus } from 'lucide-react'
 import TransactionModal from './TransactionModal'
+import Avatar from './Avatar'
 
 const sidebarItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -53,13 +53,14 @@ export default function Layout() {
 
         <div className="sidebar-user">
           {profile && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', marginBottom: 8 }}>
-              <div className="avatar" style={{ background: getAvatarColor(profile.name) }}>
-                {getInitials(profile.name)}
-              </div>
+            <div className="sidebar-profile-card">
+              <Avatar name={profile.name} size={44} ring status objectPos="center 12%" />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Aktif</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }} />
+                  Aktif
+                </div>
               </div>
             </div>
           )}
@@ -75,9 +76,7 @@ export default function Layout() {
         <div className="mobile-topbar-logo">Dompet Bersama Eto & Noni</div>
         {profile && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div className="avatar" style={{ background: getAvatarColor(profile.name), width: 32, height: 32, fontSize: 12 }}>
-              {getInitials(profile.name)}
-            </div>
+            <Avatar name={profile.name} size={32} ring objectPos="center 12%" />
             <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{profile.name}</span>
             <button onClick={handleSignOut} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px 6px', display: 'flex', alignItems: 'center' }}>
               <LogOut size={16} />

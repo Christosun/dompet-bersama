@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { formatRupiah, getInitials, getAvatarColor, formatShortDate, getCurrentMonth, getMonthName } from '../lib/utils'
+import { formatRupiah, formatShortDate, getCurrentMonth, getMonthName } from '../lib/utils'
+import Avatar from '../components/Avatar'
 import { PlusCircle, ChevronLeft, ChevronRight, Wallet, TrendingUp, TrendingDown, Activity, Receipt, BarChart2, PieChart as PieChartIcon, AlertTriangle, CheckCircle, Zap } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
 import TransactionModal from '../components/TransactionModal'
@@ -79,9 +80,7 @@ function GroupedTransactions({ transactions, profiles }) {
                       </div>
                       {who && (
                         <div className="tx-who">
-                          <div className="avatar" style={{ width: 16, height: 16, fontSize: 8, background: getAvatarColor(who.name) }}>
-                            {getInitials(who.name)}
-                          </div>
+                          <Avatar name={who.name} size={16} tooltip />
                           {who.name.split(' ')[0]}
                         </div>
                       )}

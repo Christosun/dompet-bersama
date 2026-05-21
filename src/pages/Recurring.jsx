@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useConfirm } from '../contexts/ConfirmContext'
-import { formatRupiah, getInitials, getAvatarColor } from '../lib/utils'
+import { formatRupiah } from '../lib/utils'
+import Avatar from '../components/Avatar'
 import { PlusCircle, X, Pencil, RefreshCw, Pause, Play } from 'lucide-react'
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
@@ -236,9 +237,7 @@ export default function Recurring() {
                     {creator && (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                         ·
-                        <div className="avatar" style={{ width: 14, height: 14, fontSize: 7, background: getAvatarColor(creator.name), flexShrink: 0 }}>
-                          {getInitials(creator.name)}
-                        </div>
+                        <Avatar name={creator.name} size={16} tooltip />
                         <span style={{ fontSize: 11 }}>{creator.name.split(' ')[0]}</span>
                       </span>
                     )}

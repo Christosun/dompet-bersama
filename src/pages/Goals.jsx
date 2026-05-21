@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { formatRupiah } from '../lib/utils'
-import { getInitials, getAvatarColor } from '../lib/utils'
+import Avatar from '../components/Avatar'
 import { PlusCircle, X, Pencil, Trophy, CheckCircle, Plus } from 'lucide-react'
 
 const SETUP_SQL = `-- Jalankan di Supabase Dashboard → SQL Editor
@@ -211,9 +211,7 @@ export default function Goals() {
                 {/* Tampilkan siapa yang membuat */}
                 {creator && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
-                    <div className="avatar" style={{ width: 14, height: 14, fontSize: 7, background: getAvatarColor(creator.name), flexShrink: 0 }}>
-                      {getInitials(creator.name)}
-                    </div>
+                    <Avatar name={creator.name} size={16} tooltip />
                     <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{creator.name.split(' ')[0]}</span>
                   </div>
                 )}
