@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { X } from 'lucide-react'
+import { useToast } from '../contexts/ToastContext'
+import { X, ArrowDownLeft, ArrowUpRight } from 'lucide-react'
 
 export default function TransactionModal({ onClose, onSaved, editData }) {
   const { user } = useAuth()
+  const toast = useToast()
   const [type, setType] = useState(editData?.type || 'expense')
   const [amount, setAmount] = useState(editData?.amount || '')
   const [categoryId, setCategoryId] = useState(editData?.category_id || '')
@@ -43,14 +45,19 @@ export default function TransactionModal({ onClose, onSaved, editData }) {
 
     let error
     if (editData) {
-      ({ error } = await supabase.from('transactions').update(payload).eq('id', editData.id))
+      ;({ error } = await supabase.from('transactions').update(payload).eq('id', editData.id))
     } else {
-      ({ error } = await supabase.from('transactions').insert(payload))
+      ;({ error } = await supabase.from('transactions').insert(payload))
     }
 
     setLoading(false)
-    if (!error) { onSaved(); onClose() }
-    else alert('Gagal menyimpan: ' + error.message)
+    if (!error) {
+      toast.success(editData ? 'Transaksi diperbarui' : 'Transaksi berhasil disimpan')
+      onSaved()
+      onClose()
+    } else {
+      toast.error('Gagal menyimpan: ' + error.message)
+    }
   }
 
   function handleAmountInput(e) {
@@ -72,11 +79,11 @@ export default function TransactionModal({ onClose, onSaved, editData }) {
           <div className="form-group">
             <label className="form-label">Jenis</label>
             <div className="type-toggle">
-              <button type="button" className={type === 'expense' ? 'active-expense' : ''} onClick={() => { setType('expense'); setCategoryId('') }}>
-                🔴 Pengeluaran
+              <button type="button" className={type === 'expense' ? 'active-expense' : ''} onClick={() => { setType('expense'); setCategoryId('') }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <ArrowDownLeft size={14} /> Pengeluaran
               </button>
-              <button type="button" className={type === 'income' ? 'active-income' : ''} onClick={() => { setType('income'); setCategoryId('') }}>
-                🟢 Pemasukan
+              <button type="button" className={type === 'income' ? 'active-income' : ''} onClick={() => { setType('income'); setCategoryId('') }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <ArrowUpRight size={14} /> Pemasukan
               </button>
             </div>
           </div>
@@ -100,7 +107,7 @@ export default function TransactionModal({ onClose, onSaved, editData }) {
             <select className="form-input" value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
               <option value="">Pilih kategori</option>
               {categories.map(c => (
-                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>

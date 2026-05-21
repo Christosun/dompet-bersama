@@ -1,22 +1,31 @@
+import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useConfirm } from '../contexts/ConfirmContext'
 import { getInitials, getAvatarColor } from '../lib/utils'
-import { LayoutDashboard, ArrowLeftRight, Tag, Target, BarChart2, LogOut } from 'lucide-react'
+import { LayoutDashboard, ArrowLeftRight, Tag, Target, BarChart2, LogOut, Trophy, RefreshCw, Plus } from 'lucide-react'
+import TransactionModal from './TransactionModal'
 
-const navItems = [
+const sidebarItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/transactions', icon: ArrowLeftRight, label: 'Transaksi' },
   { to: '/budget', icon: Target, label: 'Budget' },
+  { to: '/goals', icon: Trophy, label: 'Goals & Tabungan' },
   { to: '/categories', icon: Tag, label: 'Kategori' },
   { to: '/reports', icon: BarChart2, label: 'Laporan' },
+  { to: '/recurring', icon: RefreshCw, label: 'Berulang' },
 ]
+
 
 export default function Layout() {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
+  const confirm = useConfirm()
+  const [showQuickAdd, setShowQuickAdd] = useState(false)
 
   async function handleSignOut() {
-    if (!confirm('Yakin ingin keluar?')) return
+    const ok = await confirm({ title: 'Keluar', message: 'Yakin ingin keluar dari aplikasi?', confirmLabel: 'Keluar' })
+    if (!ok) return
     await signOut()
     navigate('/auth')
   }
@@ -31,7 +40,7 @@ export default function Layout() {
         </div>
 
         <nav className="sidebar-nav">
-          {navItems.map(({ to, icon: Icon, label, end }) => (
+          {sidebarItems.map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to} to={to} end={end}
               className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
@@ -81,9 +90,18 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile FAB */}
+      <button className="fab" onClick={() => setShowQuickAdd(true)} aria-label="Tambah transaksi">
+        <Plus size={22} strokeWidth={2.5} />
+      </button>
+
+      {showQuickAdd && (
+        <TransactionModal onClose={() => setShowQuickAdd(false)} onSaved={() => setShowQuickAdd(false)} />
+      )}
+
+      {/* Mobile Bottom Navigation — scrollable horizontal */}
       <nav className="mobile-bottom-nav">
-        {navItems.map(({ to, icon: Icon, label, end }) => (
+        {sidebarItems.map(({ to, icon: Icon, label, end }) => (
           <NavLink
             key={to} to={to} end={end}
             className={({ isActive }) => `mobile-nav-item${isActive ? ' mobile-nav-active' : ''}`}

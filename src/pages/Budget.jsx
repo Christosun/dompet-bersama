@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../contexts/ToastContext'
+import { useConfirm } from '../contexts/ConfirmContext'
 import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
-import { ChevronLeft, ChevronRight, PlusCircle, X, Pencil, Copy } from 'lucide-react'
+import { ChevronLeft, ChevronRight, PlusCircle, X, Pencil, Copy, Target, AlertTriangle } from 'lucide-react'
+import { CategoryIcon } from '../components/CategoryIcon'
+import { SkeletonBudgetList, SkeletonStatGrid } from '../components/Skeleton'
 
 function BudgetModal({ data, categories, month, year, onClose, onSaved }) {
   const { user } = useAuth()
+  const toast = useToast()
   const [categoryId, setCategoryId] = useState(data?.category_id || '')
   const [amount, setAmount] = useState(data?.amount || '')
   const [loading, setLoading] = useState(false)
@@ -22,8 +27,12 @@ function BudgetModal({ data, categories, month, year, onClose, onSaved }) {
       ;({ error } = await supabase.from('budgets').upsert(payload, { onConflict: 'category_id,month,year' }))
     }
     setLoading(false)
-    if (!error) { onSaved(); onClose() }
-    else alert('Gagal: ' + error.message)
+    if (!error) {
+      toast.success(data ? 'Budget diperbarui' : 'Budget berhasil ditambahkan')
+      onSaved(); onClose()
+    } else {
+      toast.error('Gagal: ' + error.message)
+    }
   }
 
   const displayAmount = amount ? parseInt(String(amount).replace(/\D/g, '')).toLocaleString('id-ID') : ''
@@ -41,7 +50,7 @@ function BudgetModal({ data, categories, month, year, onClose, onSaved }) {
             <select className="form-input" value={categoryId} onChange={e => setCategoryId(e.target.value)} required disabled={!!data}>
               <option value="">Pilih kategori</option>
               {categories.filter(c => c.type === 'expense' || c.type === 'both').map(c => (
-                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>
@@ -65,6 +74,8 @@ function BudgetModal({ data, categories, month, year, onClose, onSaved }) {
 
 export default function Budget() {
   const { user } = useAuth()
+  const toast = useToast()
+  const confirm = useConfirm()
   const [{ month, year }, setMonthYear] = useState(getCurrentMonth())
   const [budgets, setBudgets] = useState([])
   const [categories, setCategories] = useState([])
@@ -79,7 +90,6 @@ export default function Budget() {
   async function loadData() {
     setLoading(true)
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-    //const endDate = new Date(year, month, 0).toISOString().split('T')[0]
     const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
 
     const [{ data: bgs }, { data: cats }, { data: txs }] = await Promise.all([
@@ -96,42 +106,24 @@ export default function Budget() {
     setSpending(sp)
     setLoading(false)
 
-    // Auto carry-over: jika bulan ini belum ada budget sama sekali, salin dari bulan sebelumnya
     if ((bgs || []).length === 0) {
       await autoCarryOver(month, year)
     }
   }
 
   async function autoCarryOver(currentMonth, currentYear) {
-    // Hitung bulan sebelumnya
     const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1
     const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear
 
-    const { data: prevBudgets } = await supabase
-      .from('budgets')
-      .select('*')
-      .eq('month', prevMonth)
-      .eq('year', prevYear)
-
+    const { data: prevBudgets } = await supabase.from('budgets').select('*').eq('month', prevMonth).eq('year', prevYear)
     if (!prevBudgets || prevBudgets.length === 0) return
 
-    // Salin budget bulan lalu ke bulan ini
     const newBudgets = prevBudgets.map(b => ({
-      user_id: b.user_id,
-      category_id: b.category_id,
-      amount: b.amount,
-      month: currentMonth,
-      year: currentYear,
+      user_id: b.user_id, category_id: b.category_id, amount: b.amount, month: currentMonth, year: currentYear,
     }))
 
-    const { data: inserted, error } = await supabase
-      .from('budgets')
-      .upsert(newBudgets, { onConflict: 'category_id,month,year' })
-      .select('*, categories(name, icon, color)')
-
-    if (!error && inserted) {
-      setBudgets(inserted)
-    }
+    const { data: inserted, error } = await supabase.from('budgets').upsert(newBudgets, { onConflict: 'category_id,month,year' }).select('*, categories(name, icon, color)')
+    if (!error && inserted) setBudgets(inserted)
   }
 
   async function manualCopyOver() {
@@ -139,34 +131,28 @@ export default function Budget() {
     const prevMonth = month === 1 ? 12 : month - 1
     const prevYear = month === 1 ? year - 1 : year
 
-    const { data: prevBudgets } = await supabase
-      .from('budgets')
-      .select('*')
-      .eq('month', prevMonth)
-      .eq('year', prevYear)
-
+    const { data: prevBudgets } = await supabase.from('budgets').select('*').eq('month', prevMonth).eq('year', prevYear)
     if (!prevBudgets || prevBudgets.length === 0) {
-      alert(`Tidak ada budget di ${getMonthName(prevMonth, prevYear)} untuk disalin.`)
+      toast.warning(`Tidak ada budget di ${getMonthName(prevMonth, prevYear)} untuk disalin.`)
       setCopyingOver(false)
       return
     }
 
     const newBudgets = prevBudgets.map(b => ({
-      user_id: b.user_id,
-      category_id: b.category_id,
-      amount: b.amount,
-      month,
-      year,
+      user_id: b.user_id, category_id: b.category_id, amount: b.amount, month, year,
     }))
 
     await supabase.from('budgets').upsert(newBudgets, { onConflict: 'category_id,month,year' })
+    toast.success(`Budget ${getMonthName(prevMonth, prevYear)} berhasil disalin`)
     setCopyingOver(false)
     loadData()
   }
 
-  async function deleteBudget(id) {
-    if (!confirm('Hapus budget ini? Hanya untuk bulan ini saja.')) return
+  async function deleteBudget(id, catName) {
+    const ok = await confirm({ title: 'Hapus Budget', message: `Budget "${catName}" bulan ini akan dihapus. Bulan lain tidak terpengaruh.`, confirmLabel: 'Hapus' })
+    if (!ok) return
     await supabase.from('budgets').delete().eq('id', id)
+    toast.success('Budget dihapus')
     loadData()
   }
 
@@ -191,7 +177,6 @@ export default function Budget() {
     return 'var(--green)'
   }
 
-  // Prev month info untuk label tombol salin
   const prevMonthNum = month === 1 ? 12 : month - 1
   const prevYearNum = month === 1 ? year - 1 : year
 
@@ -203,12 +188,7 @@ export default function Budget() {
           <p className="page-sub">Atur batas pengeluaran per kategori</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            className="btn btn-ghost"
-            onClick={manualCopyOver}
-            disabled={copyingOver}
-            title={`Salin budget dari ${getMonthName(prevMonthNum, prevYearNum)}`}
-          >
+          <button className="btn btn-ghost" onClick={manualCopyOver} disabled={copyingOver} title={`Salin budget dari ${getMonthName(prevMonthNum, prevYearNum)}`}>
             <Copy size={15} />
             Salin bulan lalu
           </button>
@@ -224,94 +204,96 @@ export default function Budget() {
         <button className="month-nav-btn" onClick={nextMonth}><ChevronRight size={16} /></button>
       </div>
 
-      {/* Summary */}
-      <div className="stat-grid" style={{ marginBottom: 24 }}>
-        <div className="stat-card">
-          <div className="stat-label">Total Budget</div>
-          <div className="stat-value gold">{formatRupiah(totalBudget)}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Terpakai</div>
-          <div className="stat-value red">{formatRupiah(totalSpent)}</div>
-          <div className="stat-sub">{totalBudget > 0 ? Math.round(totalSpent / totalBudget * 100) : 0}% dari budget</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Sisa Budget</div>
-          <div className={`stat-value ${totalLeft >= 0 ? 'green' : 'red'}`}>{formatRupiah(totalLeft)}</div>
-          <div className="stat-sub">{totalLeft < 0 ? '⚠️ Melebihi budget!' : 'Aman'}</div>
-        </div>
-      </div>
-
-      {/* Overall progress */}
-      {totalBudget > 0 && (
-        <div className="card" style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>Total penggunaan budget</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: getBarColor(totalSpent / totalBudget * 100) }}>
-              {Math.round(totalSpent / totalBudget * 100)}%
-            </span>
-          </div>
-          <div className="budget-bar-track" style={{ height: 10 }}>
-            <div className="budget-bar-fill" style={{
-              width: `${Math.min(totalSpent / totalBudget * 100, 100)}%`,
-              background: getBarColor(totalSpent / totalBudget * 100)
-            }} />
-          </div>
-        </div>
-      )}
-
-      {loading ? <div className="spinner" /> : budgets.length === 0 ? (
-        <div className="empty-state">
-          <div className="icon">🎯</div>
-          <h3>Belum ada budget</h3>
-          <p>Budget bulan lalu akan otomatis disalin saat berpindah bulan.<br />Atau klik <strong>Salin bulan lalu</strong> / <strong>Tambah Budget</strong> untuk memulai.</p>
-        </div>
+      {loading ? (
+        <>
+          <SkeletonStatGrid />
+          <SkeletonBudgetList />
+        </>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {budgets.map(b => {
-            const spent = spending[b.category_id] || 0
-            const pct = b.amount > 0 ? Math.round(spent / b.amount * 100) : 0
-            const left = Number(b.amount) - spent
-            return (
-              <div key={b.id} className="card card-sm">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: `${b.categories?.color || '#6b7280'}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-                    {b.categories?.icon || '📦'}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-                      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{b.categories?.name || 'Kategori'}</span>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: getBarColor(pct) }}>{pct}%</span>
-                    </div>
-                    <div className="budget-bar-track">
-                      <div className="budget-bar-fill" style={{ width: `${Math.min(pct, 100)}%`, background: getBarColor(pct) }} />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 12, color: 'var(--text-muted)' }}>
-                      <span>Terpakai: <span style={{ color: 'var(--text-sub)' }}>{formatRupiah(spent)}</span></span>
-                      <span>Sisa: <span style={{ color: left < 0 ? 'var(--red)' : 'var(--green)' }}>{formatRupiah(left)}</span></span>
-                      <span>Budget: <span style={{ color: 'var(--accent)' }}>{formatRupiah(b.amount)}</span></span>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                    <button className="btn btn-icon btn-ghost btn-sm" onClick={() => { setEditData(b); setShowModal(true) }} title="Edit budget bulan ini"><Pencil size={13} /></button>
-                    <button className="btn btn-icon btn-danger btn-sm" onClick={() => deleteBudget(b.id)} title="Hapus budget bulan ini"><X size={13} /></button>
-                  </div>
-                </div>
+        <>
+          {/* Summary */}
+          <div className="stat-grid" style={{ marginBottom: 24 }}>
+            <div className="stat-card">
+              <div className="stat-label">Total Budget</div>
+              <div className="stat-value gold">{formatRupiah(totalBudget)}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Terpakai</div>
+              <div className="stat-value red">{formatRupiah(totalSpent)}</div>
+              <div className="stat-sub">{totalBudget > 0 ? Math.round(totalSpent / totalBudget * 100) : 0}% dari budget</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Sisa Budget</div>
+              <div className={`stat-value ${totalLeft >= 0 ? 'green' : 'red'}`}>{formatRupiah(totalLeft)}</div>
+              <div className="stat-sub" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                {totalLeft < 0 ? <><AlertTriangle size={11} style={{ color: 'var(--red)', flexShrink: 0 }} /> Melebihi budget!</> : 'Aman'}
               </div>
-            )
-          })}
-        </div>
+            </div>
+          </div>
+
+          {/* Overall progress */}
+          {totalBudget > 0 && (
+            <div className="card" style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>Total penggunaan budget</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: getBarColor(totalSpent / totalBudget * 100) }}>
+                  {Math.round(totalSpent / totalBudget * 100)}%
+                </span>
+              </div>
+              <div className="budget-bar-track" style={{ height: 10 }}>
+                <div className="budget-bar-fill" style={{ width: `${Math.min(totalSpent / totalBudget * 100, 100)}%`, background: getBarColor(totalSpent / totalBudget * 100) }} />
+              </div>
+            </div>
+          )}
+
+          {budgets.length === 0 ? (
+            <div className="empty-state">
+              <div className="icon"><Target size={44} strokeWidth={1.2} /></div>
+              <h3>Belum ada budget</h3>
+              <p>Budget bulan lalu akan otomatis disalin saat berpindah bulan.<br />Atau klik <strong>Salin bulan lalu</strong> / <strong>Tambah Budget</strong> untuk memulai.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {budgets.map(b => {
+                const spent = spending[b.category_id] || 0
+                const pct = b.amount > 0 ? Math.round(spent / b.amount * 100) : 0
+                const left = Number(b.amount) - spent
+                return (
+                  <div key={b.id} className="card card-sm">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 10, background: `${b.categories?.color || '#6b7280'}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <CategoryIcon icon={b.categories?.icon} size={18} color={b.categories?.color || 'var(--text-muted)'} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                          <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{b.categories?.name || 'Kategori'}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: getBarColor(pct) }}>{pct}%</span>
+                        </div>
+                        <div className="budget-bar-track">
+                          <div className="budget-bar-fill" style={{ width: `${Math.min(pct, 100)}%`, background: getBarColor(pct) }} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+                          <span>Terpakai: <span style={{ color: 'var(--text-sub)' }}>{formatRupiah(spent)}</span></span>
+                          <span>Sisa: <span style={{ color: left < 0 ? 'var(--red)' : 'var(--green)' }}>{formatRupiah(left)}</span></span>
+                          <span>Budget: <span style={{ color: 'var(--accent)' }}>{formatRupiah(b.amount)}</span></span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                        <button className="btn btn-icon btn-ghost btn-sm" onClick={() => { setEditData(b); setShowModal(true) }} title="Edit budget bulan ini"><Pencil size={13} /></button>
+                        <button className="btn btn-icon btn-danger btn-sm" onClick={() => deleteBudget(b.id, b.categories?.name || 'budget')} title="Hapus budget bulan ini"><X size={13} /></button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {showModal && (
-        <BudgetModal
-          data={editData}
-          categories={categories}
-          month={month}
-          year={year}
-          onClose={() => { setShowModal(false); setEditData(null) }}
-          onSaved={loadData}
-        />
+        <BudgetModal data={editData} categories={categories} month={month} year={year}
+          onClose={() => { setShowModal(false); setEditData(null) }} onSaved={loadData} />
       )}
     </div>
   )

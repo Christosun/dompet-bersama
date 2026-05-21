@@ -26,9 +26,9 @@ function Footer() {
         width: '100%',
         maxWidth: 320,
       }}>
-        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, transparent, rgba(200,169,126,0.3))' }} />
-        <div style={{ fontSize: 14, color: 'var(--accent)', opacity: 0.6 }}>✦</div>
-        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to left, transparent, rgba(200,169,126,0.3))' }} />
+        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, transparent, rgba(245,166,35,0.4))' }} />
+        <div style={{ fontSize: 14, color: 'var(--accent)', opacity: 0.9 }}>✦</div>
+        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to left, transparent, rgba(245,166,35,0.4))' }} />
       </div>
 
       {/* Crafted by */}

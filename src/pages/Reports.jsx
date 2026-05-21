@@ -1,23 +1,24 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus, BarChart2 as BarChartIcon, PieChart as PieChartIcon, Info, Download } from 'lucide-react'
+import { CategoryIcon } from '../components/CategoryIcon'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
   LineChart, Line, CartesianGrid, ReferenceLine, Area, AreaChart, ComposedChart
 } from 'recharts'
 
-const PIE_COLORS = ['#c8a97e','#6366f1','#10b981','#f59e0b','#ec4899','#3b82f6','#ef4444','#06b6d4','#84cc16','#e879f9']
+const PIE_COLORS = ['#f5a623','#4ade80','#60a5fa','#f472b6','#a78bfa','#34d399','#f87171','#06b6d4','#fbbf24','#e879f9']
 
 const TOOLTIP_STYLE = {
-  background: '#1c1c22',
-  border: '1px solid rgba(255,255,255,0.12)',
+  background: '#1a1d24',
+  border: '1px solid rgba(245,166,35,0.25)',
   borderRadius: 12,
-  color: '#f0eff4',
+  color: '#f5f0e8',
   fontSize: 12,
   padding: '10px 14px',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
 }
 
 // Helper: get start/end date strings for a given month/year
@@ -40,7 +41,7 @@ function subtractMonths(month, year, n) {
 function ActiveDot(props) {
   const { cx, cy, value } = props
   if (!value && value !== 0) return null
-  return <circle cx={cx} cy={cy} r={4} fill="#c8a97e" stroke="#0f0f11" strokeWidth={2} />
+  return <circle cx={cx} cy={cy} r={4} fill="#f5a623" stroke="#0d0f14" strokeWidth={2} />
 }
 
 // Custom dot for avg line — subtle
@@ -70,11 +71,11 @@ function CumulativeTooltip({ active, payload, label, avgLabel }) {
       </div>
       {current?.value != null && (
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 4 }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#c8a97e' }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#c8a97e', display: 'inline-block' }} />
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#f7c055' }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f5a623', display: 'inline-block' }} />
             Bulan ini
           </span>
-          <span style={{ fontWeight: 500, color: '#f0eff4' }}>{formatRupiah(current.value)}</span>
+          <span style={{ fontWeight: 500, color: '#f5f0e8' }}>{formatRupiah(current.value)}</span>
         </div>
       )}
       {avg?.value != null && (
@@ -107,6 +108,21 @@ function CumulativeTooltip({ active, payload, label, avgLabel }) {
       )}
     </div>
   )
+}
+
+function exportCSV(transactions, month, year) {
+  const header = 'Tanggal,Jenis,Kategori,Jumlah,Catatan'
+  const rows = transactions.map(t =>
+    [t.date, t.type === 'income' ? 'Pemasukan' : 'Pengeluaran', t.categories?.name || '', t.amount, t.note || ''].join(',')
+  )
+  const csv = [header, ...rows].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `laporan-${year}-${String(month).padStart(2, '0')}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 export default function Reports() {
@@ -286,9 +302,16 @@ export default function Reports() {
 
   return (
     <div>
-      <div className="page-header">
-        <h1 className="page-title">Laporan</h1>
-        <p className="page-sub">Analisis keuangan rumah tangga secara visual</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1 className="page-title">Laporan</h1>
+          <p className="page-sub">Analisis keuangan rumah tangga secara visual</p>
+        </div>
+        {!loading && transactions.length > 0 && (
+          <button className="btn btn-ghost" onClick={() => exportCSV(transactions, month, year)}>
+            <Download size={15} /> Export CSV
+          </button>
+        )}
       </div>
 
       <div className="month-nav" style={{ marginBottom: 24 }}>
@@ -331,8 +354,8 @@ export default function Reports() {
                   <Tooltip
                     formatter={v => formatRupiah(v)}
                     contentStyle={TOOLTIP_STYLE}
-                    itemStyle={{ color: '#f0eff4' }}
-                    labelStyle={{ color: '#c8a97e', fontWeight: 600 }}
+                    itemStyle={{ color: '#f5f0e8' }}
+                    labelStyle={{ color: '#f7c055', fontWeight: 600 }}
                     labelFormatter={v => `Hari ke-${v}`}
                     cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                   />
@@ -346,14 +369,14 @@ export default function Reports() {
             <div className="card">
               <div className="section-title">Komposisi Pengeluaran</div>
               {pieData.length === 0 ? (
-                <div className="empty-state" style={{ padding: 20 }}><div className="icon">🥧</div><p>Belum ada pengeluaran</p></div>
+                <div className="empty-state" style={{ padding: 20 }}><div className="icon"><PieChartIcon size={36} strokeWidth={1.2} /></div><p>Belum ada pengeluaran</p></div>
               ) : (
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                   <PieChart width={150} height={150}>
                     <Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" strokeWidth={0}>
                       {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                     </Pie>
-                    <Tooltip formatter={v => formatRupiah(v)} contentStyle={TOOLTIP_STYLE} itemStyle={{ color: '#f0eff4' }} labelStyle={{ color: '#c8a97e', fontWeight: 600 }} />
+                    <Tooltip formatter={v => formatRupiah(v)} contentStyle={TOOLTIP_STYLE} itemStyle={{ color: '#f5f0e8' }} labelStyle={{ color: '#f7c055', fontWeight: 600 }} />
                   </PieChart>
                   <div style={{ flex: 1 }}>
                     {pieData.slice(0, 7).map((d, i) => (
@@ -418,7 +441,7 @@ export default function Reports() {
             {/* Legend */}
             <div style={{ display: 'flex', gap: 20, marginBottom: 16, alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                <div style={{ width: 24, height: 2.5, borderRadius: 2, background: '#c8a97e' }} />
+                <div style={{ width: 24, height: 2.5, borderRadius: 2, background: 'linear-gradient(90deg, #e8960f, #f7c055)' }} />
                 <span style={{ fontSize: 12, color: 'var(--text-sub)', fontWeight: 500 }}>Bulan ini</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -441,8 +464,8 @@ export default function Reports() {
               <ComposedChart data={cumulativeChartData} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
                 <defs>
                   <linearGradient id="currentGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#c8a97e" stopOpacity={0.18} />
-                    <stop offset="100%" stopColor="#c8a97e" stopOpacity={0.01} />
+                    <stop offset="0%" stopColor="#f5a623" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="#f5a623" stopOpacity={0.01} />
                   </linearGradient>
                 </defs>
 
@@ -509,10 +532,10 @@ export default function Reports() {
                   type="monotone"
                   dataKey="current"
                   name="Bulan ini"
-                  stroke="#c8a97e"
+                  stroke="#f5a623"
                   strokeWidth={2.5}
                   dot={false}
-                  activeDot={{ r: 5, fill: '#c8a97e', stroke: '#0f0f11', strokeWidth: 2 }}
+                  activeDot={{ r: 5, fill: '#f7c055', stroke: '#0d0f14', strokeWidth: 2 }}
                   connectNulls={false}
                 />
               </ComposedChart>
@@ -558,8 +581,8 @@ export default function Reports() {
             )}
 
             {!hasAvgData && (
-              <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--bg-card2)', borderRadius: 10, fontSize: 12, color: 'var(--text-muted)' }}>
-                💡 Perbandingan akan muncul setelah ada data dari 3 bulan sebelumnya.
+              <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--bg-card2)', borderRadius: 10, fontSize: 12, color: 'var(--text-muted)', display:'flex', alignItems:'center', gap:8 }}>
+                <Info size={13} style={{flexShrink:0, color:'var(--accent)'}} /> Perbandingan akan muncul setelah ada data dari 3 bulan sebelumnya.
               </div>
             )}
           </div>
@@ -595,7 +618,9 @@ export default function Reports() {
                     <div style={{ width: 24, height: 24, borderRadius: 6, background: 'var(--bg-card2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>
                       {i + 1}
                     </div>
-                    <div style={{ fontSize: 18 }}>{t.categories?.icon || '💰'}</div>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      <CategoryIcon icon={t.categories?.icon} size={17} color={t.categories?.color || 'var(--text-muted)'} />
+                    </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{t.categories?.name}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t.note || t.date} · {profiles[t.user_id]?.name || ''}</div>

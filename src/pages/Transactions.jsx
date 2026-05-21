@@ -1,9 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { formatRupiah, getInitials, getAvatarColor, formatDate, getCurrentMonth, getMonthName } from '../lib/utils'
-import { PlusCircle, Search, Trash2, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useToast } from '../contexts/ToastContext'
+import { useConfirm } from '../contexts/ConfirmContext'
+import { formatRupiah, getInitials, getAvatarColor, getCurrentMonth, getMonthName } from '../lib/utils'
+import { PlusCircle, Search, Trash2, Pencil, ChevronLeft, ChevronRight, SearchX } from 'lucide-react'
+import { CategoryIcon } from '../components/CategoryIcon'
 import TransactionModal from '../components/TransactionModal'
+import { SkeletonTransactionList } from '../components/Skeleton'
+
+const SWIPE_REVEAL = 136
 
 function formatDateHeader(dateStr) {
   const date = new Date(dateStr + 'T00:00:00')
@@ -14,27 +20,105 @@ function formatDateHeader(dateStr) {
   const isToday = date.toDateString() === today.toDateString()
   const isYesterday = date.toDateString() === yesterday.toDateString()
 
-  // Format tanggal lengkap (tanpa weekday biar tidak dobel)
-  const formattedDate = new Intl.DateTimeFormat('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  }).format(date)
-
+  const formattedDate = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(date)
   if (isToday) return `Hari Ini • ${formattedDate}`
   if (isYesterday) return `Kemarin • ${formattedDate}`
+  return new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date)
+}
 
-  // Untuk hari lain tetap pakai format lengkap + weekday
-  return new Intl.DateTimeFormat('id-ID', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  }).format(date)
+function SwipeableRow({ tx, isOwn, who, onEdit, onDelete }) {
+  const [offset, setOffset] = useState(0)
+  const [isOpen, setIsOpen] = useState(false)
+  const touchRef = useRef(null)
+  const THRESHOLD = 60
+
+  function handleTouchStart(e) {
+    touchRef.current = { startX: e.touches[0].clientX, startOffset: isOpen ? SWIPE_REVEAL : 0 }
+  }
+
+  function handleTouchMove(e) {
+    if (!touchRef.current) return
+    const dx = touchRef.current.startX - e.touches[0].clientX
+    const newOffset = Math.max(0, Math.min(touchRef.current.startOffset + dx, SWIPE_REVEAL))
+    setOffset(newOffset)
+  }
+
+  function handleTouchEnd() {
+    if (!touchRef.current) return
+    if (offset > THRESHOLD) {
+      setOffset(SWIPE_REVEAL)
+      setIsOpen(true)
+    } else {
+      setOffset(0)
+      setIsOpen(false)
+    }
+    touchRef.current = null
+  }
+
+  function close() { setOffset(0); setIsOpen(false) }
+
+  return (
+    <div className="swipe-row">
+      {/* Action buttons revealed on swipe */}
+      {isOwn && (
+        <div className="swipe-reveal" style={{ width: SWIPE_REVEAL }}>
+          <button className="swipe-btn swipe-btn-edit" onClick={() => { close(); onEdit(tx) }}>
+            <Pencil size={16} /><span>Edit</span>
+          </button>
+          <button className="swipe-btn swipe-btn-delete" onClick={() => { close(); onDelete(tx) }}>
+            <Trash2 size={16} /><span>Hapus</span>
+          </button>
+        </div>
+      )}
+      {/* Content */}
+      <div
+        className={`swipe-content${offset > 0 && offset < SWIPE_REVEAL ? ' dragging' : ''}`}
+        style={{ transform: `translateX(-${offset}px)` }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div
+          className="tx-item"
+          style={{ borderRadius: 0, padding: '10px 16px', gap: 12 }}
+          onClick={() => isOpen && close()}
+        >
+          <div className="tx-icon" style={{ background: `${tx.categories?.color || '#6b7280'}20` }}>
+            <CategoryIcon icon={tx.categories?.icon} size={17} color={tx.categories?.color || 'var(--text-muted)'} />
+          </div>
+          <div className="tx-info">
+            <div className="tx-cat">{tx.categories?.name || 'Tidak diketahui'}</div>
+            <div className="tx-note">{tx.note && <span style={{ marginRight: 6 }}>{tx.note}</span>}</div>
+          </div>
+          <div className="tx-meta">
+            <div className={`tx-amount ${tx.type === 'income' ? 'pos' : 'neg'}`}>
+              {tx.type === 'income' ? '+' : '-'}{formatRupiah(tx.amount)}
+            </div>
+            {who && (
+              <div className="tx-who">
+                <div className="avatar" style={{ width: 16, height: 16, fontSize: 8, background: getAvatarColor(who.name) }}>
+                  {getInitials(who.name)}
+                </div>
+                {who.name.split(' ')[0]}
+              </div>
+            )}
+          </div>
+          {isOwn && (
+            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+              <button className="btn btn-icon btn-ghost btn-sm" onClick={e => { e.stopPropagation(); onEdit(tx) }} title="Edit"><Pencil size={13} /></button>
+              <button className="btn btn-icon btn-danger btn-sm" onClick={e => { e.stopPropagation(); onDelete(tx) }} title="Hapus"><Trash2 size={13} /></button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function Transactions() {
   const { user } = useAuth()
+  const toast = useToast()
+  const confirm = useConfirm()
   const [transactions, setTransactions] = useState([])
   const [categories, setCategories] = useState([])
   const [profiles, setProfiles] = useState({})
@@ -42,10 +126,7 @@ export default function Transactions() {
   const [showModal, setShowModal] = useState(false)
   const [editData, setEditData] = useState(null)
 
-  // Month filter
   const [{ month, year }, setMonthYear] = useState(getCurrentMonth())
-
-  // Other filters
   const [filterType, setFilterType] = useState('all')
   const [filterCat, setFilterCat] = useState('all')
   const [filterUser, setFilterUser] = useState('all')
@@ -58,17 +139,12 @@ export default function Transactions() {
   async function loadAll() {
     setLoading(true)
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-    //const endDate = new Date(year, month, 0).toISOString().split('T')[0]
     const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
 
     const [{ data: txs }, { data: cats }, { data: profs }] = await Promise.all([
-      supabase
-        .from('transactions')
-        .select('*, categories(name, icon, color)')
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false }),
+      supabase.from('transactions').select('*, categories(name, icon, color)')
+        .gte('date', startDate).lte('date', endDate)
+        .order('date', { ascending: false }).order('created_at', { ascending: false }),
       supabase.from('categories').select('*').order('name'),
       supabase.from('profiles').select('*')
     ])
@@ -80,11 +156,43 @@ export default function Transactions() {
     setLoading(false)
   }
 
-  async function deleteTransaction(id) {
-    if (!confirm('Hapus transaksi ini?')) return
-    await supabase.from('transactions').delete().eq('id', id)
-    loadAll()
+  async function deleteTransaction(tx) {
+    const ok = await confirm({ title: 'Hapus Transaksi', message: 'Transaksi ini akan dihapus permanen.', confirmLabel: 'Hapus' })
+    if (!ok) return
+
+    // Optimistic remove
+    setTransactions(prev => prev.filter(t => t.id !== tx.id))
+
+    const { error } = await supabase.from('transactions').delete().eq('id', tx.id)
+    if (error) {
+      setTransactions(prev => [...prev, tx].sort((a, b) => b.date.localeCompare(a.date) || b.created_at?.localeCompare(a.created_at || '') || 0))
+      toast.error('Gagal menghapus: ' + error.message)
+      return
+    }
+
+    // Show undo toast
+    const toastId = toast.success('Transaksi dihapus', {
+      duration: 5000,
+      action: {
+        label: 'Undo',
+        onClick: async () => {
+          const { data: restored, error: insertErr } = await supabase
+            .from('transactions')
+            .insert({ user_id: tx.user_id, type: tx.type, amount: tx.amount, category_id: tx.category_id, note: tx.note, date: tx.date })
+            .select('*, categories(name, icon, color)')
+            .single()
+          if (!insertErr && restored) {
+            setTransactions(prev => [restored, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
+            toast.success('Transaksi dikembalikan')
+          } else {
+            toast.error('Gagal undo')
+          }
+        }
+      }
+    })
   }
+
+  function handleEdit(tx) { setEditData(tx); setShowModal(true) }
 
   function prevMonth() {
     setMonthYear(({ month, year }) => month === 1 ? { month: 12, year: year - 1 } : { month: month - 1, year })
@@ -107,23 +215,13 @@ export default function Transactions() {
     return true
   })
 
-  // Summary stats for filtered transactions
   const totalIncome = filtered.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
   const totalExpense = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
   const totalNet = totalIncome - totalExpense
 
-  // Group by date
   const groups = {}
-  filtered.forEach(tx => {
-    if (!groups[tx.date]) groups[tx.date] = []
-    groups[tx.date].push(tx)
-  })
+  filtered.forEach(tx => { if (!groups[tx.date]) groups[tx.date] = []; groups[tx.date].push(tx) })
   const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a))
-
-  function handleEdit(tx) {
-    setEditData(tx)
-    setShowModal(true)
-  }
 
   function clearFilters() {
     setFilterType('all'); setFilterCat('all'); setFilterUser('all')
@@ -144,7 +242,6 @@ export default function Transactions() {
         </button>
       </div>
 
-      {/* Month Navigator */}
       <div className="month-nav" style={{ marginBottom: 20 }}>
         <button className="month-nav-btn" onClick={prevMonth}><ChevronLeft size={16} /></button>
         <span className="month-name">{getMonthName(month, year)}</span>
@@ -166,7 +263,7 @@ export default function Transactions() {
             <div className="form-label" style={{ marginBottom: 6 }}>Kategori</div>
             <select className="form-input" value={filterCat} onChange={e => setFilterCat(e.target.value)}>
               <option value="all">Semua Kategori</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div style={{ flex: '1 1 140px' }}>
@@ -191,19 +288,12 @@ export default function Transactions() {
               <input type="text" className="form-input" placeholder="Catatan atau kategori..." value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 32 }} />
             </div>
           </div>
-          {hasFilter && (
-            <button className="btn btn-ghost btn-sm" onClick={clearFilters} style={{ alignSelf: 'flex-end' }}>Reset</button>
-          )}
+          {hasFilter && <button className="btn btn-ghost btn-sm" onClick={clearFilters} style={{ alignSelf: 'flex-end' }}>Reset</button>}
         </div>
       </div>
 
-      {/* Monthly summary stats */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-        gap: 10,
-        marginBottom: 20
-      }}>
+      {/* Summary stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 20 }}>
         <div className="stat-card" style={{ padding: '14px 16px' }}>
           <div className="stat-label">Pemasukan</div>
           <div className="stat-value green" style={{ fontSize: 18 }}>{formatRupiah(totalIncome)}</div>
@@ -221,11 +311,11 @@ export default function Transactions() {
         </div>
       </div>
 
-      {/* Grouped transaction list */}
-      {loading ? <div className="spinner" /> : sortedDates.length === 0 ? (
+      {/* Grouped list */}
+      {loading ? <SkeletonTransactionList count={3} /> : sortedDates.length === 0 ? (
         <div className="card">
           <div className="empty-state">
-            <div className="icon">🔍</div>
+            <div className="icon"><SearchX size={44} strokeWidth={1.2} /></div>
             <h3>Tidak ada transaksi</h3>
             <p>Coba ubah filter atau tambah transaksi baru</p>
           </div>
@@ -239,108 +329,35 @@ export default function Transactions() {
             const dayNet = dayIncome - dayExpense
 
             return (
-              <div key={date} style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                borderRadius: 14,
-                overflow: 'hidden'
-              }}>
-                {/* Date header */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '9px 16px',
-                  background: 'var(--bg-card2)',
-                  borderBottom: '1px solid var(--border)',
-                  flexWrap: 'wrap',
-                  gap: 8
-                }}>
+              <div key={date} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 16px', background: 'var(--bg-card2)', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>
-                      {formatDateHeader(date)}
-                    </span>
-                    <span style={{
-                      fontSize: 11,
-                      background: 'var(--bg)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 99,
-                      padding: '2px 8px',
-                      color: 'var(--text-muted)'
-                    }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{formatDateHeader(date)}</span>
+                    <span style={{ fontSize: 11, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 99, padding: '2px 8px', color: 'var(--text-muted)' }}>
                       {txs.length} transaksi
                     </span>
                   </div>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                    {dayIncome > 0 && (
-                      <span style={{ fontSize: 12, color: 'var(--green)' }}>
-                        +{formatRupiah(dayIncome)}
-                      </span>
-                    )}
-                    {dayExpense > 0 && (
-                      <span style={{ fontSize: 12, color: 'var(--red)' }}>
-                        -{formatRupiah(dayExpense)}
-                      </span>
-                    )}
-                    <span style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: dayNet >= 0 ? 'var(--green)' : 'var(--red)',
-                      paddingLeft: 6,
-                      borderLeft: '1px solid var(--border)'
-                    }}>
+                    {dayIncome > 0 && <span style={{ fontSize: 12, color: 'var(--green)' }}>+{formatRupiah(dayIncome)}</span>}
+                    {dayExpense > 0 && <span style={{ fontSize: 12, color: 'var(--red)' }}>-{formatRupiah(dayExpense)}</span>}
+                    <span style={{ fontSize: 12, fontWeight: 600, color: dayNet >= 0 ? 'var(--green)' : 'var(--red)', paddingLeft: 6, borderLeft: '1px solid var(--border)' }}>
                       {dayNet >= 0 ? '+' : ''}{formatRupiah(dayNet)}
                     </span>
                   </div>
                 </div>
 
-                {/* Transactions for that day */}
                 <div>
-                  {txs.map((tx, i) => {
-                    const who = profiles[tx.user_id]
-                    const isOwn = tx.user_id === user.id
-                    return (
-                      <div
-                        key={tx.id}
-                        className="tx-item"
-                        style={{
-                          borderBottom: i < txs.length - 1 ? '1px solid var(--border)' : 'none',
-                          borderRadius: 0,
-                          padding: '10px 16px',
-                          gap: 12
-                        }}
-                      >
-                        <div className="tx-icon" style={{ background: `${tx.categories?.color || '#6b7280'}20` }}>
-                          {tx.categories?.icon || '💰'}
-                        </div>
-                        <div className="tx-info">
-                          <div className="tx-cat">{tx.categories?.name || 'Tidak diketahui'}</div>
-                          <div className="tx-note">
-                            {tx.note && <span style={{ marginRight: 6 }}>{tx.note}</span>}
-                          </div>
-                        </div>
-                        <div className="tx-meta">
-                          <div className={`tx-amount ${tx.type === 'income' ? 'pos' : 'neg'}`}>
-                            {tx.type === 'income' ? '+' : '-'}{formatRupiah(tx.amount)}
-                          </div>
-                          {who && (
-                            <div className="tx-who">
-                              <div className="avatar" style={{ width: 16, height: 16, fontSize: 8, background: getAvatarColor(who.name) }}>
-                                {getInitials(who.name)}
-                              </div>
-                              {who.name.split(' ')[0]}
-                            </div>
-                          )}
-                        </div>
-                        {isOwn && (
-                          <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                            <button className="btn btn-icon btn-ghost btn-sm" onClick={() => handleEdit(tx)} title="Edit"><Pencil size={13} /></button>
-                            <button className="btn btn-icon btn-danger btn-sm" onClick={() => deleteTransaction(tx.id)} title="Hapus"><Trash2 size={13} /></button>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
+                  {txs.map((tx, i) => (
+                    <div key={tx.id} style={{ borderBottom: i < txs.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                      <SwipeableRow
+                        tx={tx}
+                        isOwn={tx.user_id === user.id}
+                        who={profiles[tx.user_id]}
+                        onEdit={handleEdit}
+                        onDelete={deleteTransaction}
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
             )
@@ -349,11 +366,7 @@ export default function Transactions() {
       )}
 
       {showModal && (
-        <TransactionModal
-          onClose={() => { setShowModal(false); setEditData(null) }}
-          onSaved={loadAll}
-          editData={editData}
-        />
+        <TransactionModal onClose={() => { setShowModal(false); setEditData(null) }} onSaved={loadAll} editData={editData} />
       )}
     </div>
   )
