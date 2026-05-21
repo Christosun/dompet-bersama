@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
@@ -8,8 +8,6 @@ import { PlusCircle, Search, Trash2, Pencil, ChevronLeft, ChevronRight, SearchX 
 import { CategoryIcon } from '../components/CategoryIcon'
 import TransactionModal from '../components/TransactionModal'
 import { SkeletonTransactionList } from '../components/Skeleton'
-
-const SWIPE_REVEAL = 136
 
 function formatDateHeader(dateStr) {
   const date = new Date(dateStr + 'T00:00:00')
@@ -26,94 +24,6 @@ function formatDateHeader(dateStr) {
   return new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date)
 }
 
-function SwipeableRow({ tx, isOwn, who, onEdit, onDelete }) {
-  const [offset, setOffset] = useState(0)
-  const [isOpen, setIsOpen] = useState(false)
-  const touchRef = useRef(null)
-  const THRESHOLD = 60
-
-  function handleTouchStart(e) {
-    touchRef.current = { startX: e.touches[0].clientX, startOffset: isOpen ? SWIPE_REVEAL : 0 }
-  }
-
-  function handleTouchMove(e) {
-    if (!touchRef.current) return
-    const dx = touchRef.current.startX - e.touches[0].clientX
-    const newOffset = Math.max(0, Math.min(touchRef.current.startOffset + dx, SWIPE_REVEAL))
-    setOffset(newOffset)
-  }
-
-  function handleTouchEnd() {
-    if (!touchRef.current) return
-    if (offset > THRESHOLD) {
-      setOffset(SWIPE_REVEAL)
-      setIsOpen(true)
-    } else {
-      setOffset(0)
-      setIsOpen(false)
-    }
-    touchRef.current = null
-  }
-
-  function close() { setOffset(0); setIsOpen(false) }
-
-  return (
-    <div className="swipe-row">
-      {/* Action buttons revealed on swipe */}
-      {isOwn && (
-        <div className="swipe-reveal" style={{ width: SWIPE_REVEAL }}>
-          <button className="swipe-btn swipe-btn-edit" onClick={() => { close(); onEdit(tx) }}>
-            <Pencil size={16} /><span>Edit</span>
-          </button>
-          <button className="swipe-btn swipe-btn-delete" onClick={() => { close(); onDelete(tx) }}>
-            <Trash2 size={16} /><span>Hapus</span>
-          </button>
-        </div>
-      )}
-      {/* Content */}
-      <div
-        className={`swipe-content${offset > 0 && offset < SWIPE_REVEAL ? ' dragging' : ''}`}
-        style={{ transform: `translateX(-${offset}px)` }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div
-          className="tx-item"
-          style={{ borderRadius: 0, padding: '10px 16px', gap: 12 }}
-          onClick={() => isOpen && close()}
-        >
-          <div className="tx-icon" style={{ background: `${tx.categories?.color || '#6b7280'}20` }}>
-            <CategoryIcon icon={tx.categories?.icon} size={17} color={tx.categories?.color || 'var(--text-muted)'} />
-          </div>
-          <div className="tx-info">
-            <div className="tx-cat">{tx.categories?.name || 'Tidak diketahui'}</div>
-            <div className="tx-note">{tx.note && <span style={{ marginRight: 6 }}>{tx.note}</span>}</div>
-          </div>
-          <div className="tx-meta">
-            <div className={`tx-amount ${tx.type === 'income' ? 'pos' : 'neg'}`}>
-              {tx.type === 'income' ? '+' : '-'}{formatRupiah(tx.amount)}
-            </div>
-            {who && (
-              <div className="tx-who">
-                <div className="avatar" style={{ width: 16, height: 16, fontSize: 8, background: getAvatarColor(who.name) }}>
-                  {getInitials(who.name)}
-                </div>
-                {who.name.split(' ')[0]}
-              </div>
-            )}
-          </div>
-          {isOwn && (
-            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-              <button className="btn btn-icon btn-ghost btn-sm" onClick={e => { e.stopPropagation(); onEdit(tx) }} title="Edit"><Pencil size={13} /></button>
-              <button className="btn btn-icon btn-danger btn-sm" onClick={e => { e.stopPropagation(); onDelete(tx) }} title="Hapus"><Trash2 size={13} /></button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 export default function Transactions() {
   const { user } = useAuth()
@@ -347,17 +257,44 @@ export default function Transactions() {
                 </div>
 
                 <div>
-                  {txs.map((tx, i) => (
-                    <div key={tx.id} style={{ borderBottom: i < txs.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                      <SwipeableRow
-                        tx={tx}
-                        isOwn={tx.user_id === user.id}
-                        who={profiles[tx.user_id]}
-                        onEdit={handleEdit}
-                        onDelete={deleteTransaction}
-                      />
-                    </div>
-                  ))}
+                  {txs.map((tx, i) => {
+                    const who = profiles[tx.user_id]
+                    const isOwn = tx.user_id === user.id
+                    return (
+                      <div
+                        key={tx.id}
+                        className="tx-item"
+                        style={{ borderBottom: i < txs.length - 1 ? '1px solid var(--border)' : 'none', borderRadius: 0, padding: '10px 16px', gap: 12 }}
+                      >
+                        <div className="tx-icon" style={{ background: `${tx.categories?.color || '#6b7280'}20` }}>
+                          <CategoryIcon icon={tx.categories?.icon} size={17} color={tx.categories?.color || 'var(--text-muted)'} />
+                        </div>
+                        <div className="tx-info">
+                          <div className="tx-cat">{tx.categories?.name || 'Tidak diketahui'}</div>
+                          <div className="tx-note">{tx.note && <span style={{ marginRight: 6 }}>{tx.note}</span>}</div>
+                        </div>
+                        <div className="tx-meta">
+                          <div className={`tx-amount ${tx.type === 'income' ? 'pos' : 'neg'}`}>
+                            {tx.type === 'income' ? '+' : '-'}{formatRupiah(tx.amount)}
+                          </div>
+                          {who && (
+                            <div className="tx-who">
+                              <div className="avatar" style={{ width: 16, height: 16, fontSize: 8, background: getAvatarColor(who.name) }}>
+                                {getInitials(who.name)}
+                              </div>
+                              {who.name.split(' ')[0]}
+                            </div>
+                          )}
+                        </div>
+                        {isOwn && (
+                          <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                            <button className="btn btn-icon btn-ghost btn-sm" onClick={() => handleEdit(tx)} title="Edit"><Pencil size={13} /></button>
+                            <button className="btn btn-icon btn-danger btn-sm" onClick={() => deleteTransaction(tx)} title="Hapus"><Trash2 size={13} /></button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )

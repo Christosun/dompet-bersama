@@ -771,50 +771,6 @@ select.form-input option { background: var(--bg-card2); }
   animation: shimmer 1.6s infinite;
 }
 
-/* ══════════════════════════════
-   SWIPE-TO-DELETE (Mobile)
-══════════════════════════════ */
-
-.swipe-row {
-  position: relative;
-  overflow: hidden;
-  touch-action: pan-y;
-}
-
-.swipe-content {
-  will-change: transform;
-  transition: transform 0.22s ease;
-}
-
-.swipe-content.dragging {
-  transition: none;
-}
-
-.swipe-reveal {
-  position: absolute;
-  right: 0; top: 0; bottom: 0;
-  display: flex;
-  align-items: stretch;
-  overflow: hidden;
-}
-
-.swipe-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  width: 68px;
-  border: none;
-  cursor: pointer;
-  font-size: 11px;
-  font-family: var(--font-body);
-  font-weight: 500;
-  transition: opacity 0.15s;
-}
-.swipe-btn:active { opacity: 0.8; }
-.swipe-btn-edit { background: rgba(96,165,250,0.18); color: #60a5fa; }
-.swipe-btn-delete { background: rgba(248,113,113,0.18); color: var(--red); }
 
 /* ══════════════════════════════
    FLOATING ACTION BUTTON
