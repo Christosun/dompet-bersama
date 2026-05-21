@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { formatRupiah } from '../lib/utils'
+import { getInitials, getAvatarColor } from '../lib/utils'
 import { PlusCircle, X, Pencil, Trophy, CheckCircle, Plus } from 'lucide-react'
 
 const SETUP_SQL = `-- Jalankan di Supabase Dashboard → SQL Editor
@@ -17,7 +18,10 @@ create table if not exists goals (
   created_at timestamptz default now()
 );
 alter table goals enable row level security;
-create policy "Users manage own goals" on goals for all using (auth.uid() = user_id) with check (auth.uid() = user_id);`
+create policy "All can read goals" on goals for select using (auth.role() = 'authenticated');
+create policy "Users insert goals" on goals for insert with check (auth.uid() = user_id);
+create policy "All can update goals" on goals for update using (auth.role() = 'authenticated');
+create policy "All can delete goals" on goals for delete using (auth.role() = 'authenticated');`
 
 function GoalModal({ data, onClose, onSaved }) {
   const { user } = useAuth()
@@ -118,7 +122,9 @@ function ContributeModal({ goal, onClose, onSaved }) {
           <h2 className="modal-title" style={{ margin: 0 }}>Tambah Tabungan</h2>
           <button className="btn btn-icon btn-ghost" onClick={onClose}><X size={16} /></button>
         </div>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>{goal.name} · {formatRupiah(goal.current_amount || 0)} / {formatRupiah(goal.target_amount)}</p>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
+          {goal.name} · {formatRupiah(goal.current_amount || 0)} / {formatRupiah(goal.target_amount)}
+        </p>
         <form onSubmit={handleSave}>
           <div className="form-group">
             <label className="form-label">Jumlah (Rp)</label>
@@ -143,6 +149,7 @@ export default function Goals() {
   const toast = useToast()
   const confirm = useConfirm()
   const [goals, setGoals] = useState([])
+  const [profiles, setProfiles] = useState({})
   const [loading, setLoading] = useState(true)
   const [tableMissing, setTableMissing] = useState(false)
   const [showModal, setShowModal] = useState(false)
@@ -153,9 +160,19 @@ export default function Goals() {
 
   async function loadGoals() {
     setLoading(true)
-    const { data, error } = await supabase.from('goals').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
-    if (error?.code === '42P01') setTableMissing(true)
-    else setGoals(data || [])
+    // Ambil semua goals (bersama) + profiles untuk tampilkan siapa yang buat
+    const [{ data, error }, { data: profs }] = await Promise.all([
+      supabase.from('goals').select('*').order('created_at', { ascending: false }),
+      supabase.from('profiles').select('id, name'),
+    ])
+    if (error?.code === '42P01') {
+      setTableMissing(true)
+    } else {
+      setGoals(data || [])
+      const pm = {}
+      ;(profs || []).forEach(p => pm[p.id] = p)
+      setProfiles(pm)
+    }
     setLoading(false)
   }
 
@@ -174,6 +191,7 @@ export default function Goals() {
     const pct = g.target_amount > 0 ? Math.min(Math.round((g.current_amount || 0) / g.target_amount * 100), 100) : 0
     const done = pct >= 100
     const remaining = Math.max(g.target_amount - (g.current_amount || 0), 0)
+    const creator = profiles[g.user_id]
 
     let daysLeft = null
     if (g.deadline && !done) {
@@ -188,7 +206,18 @@ export default function Goals() {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-              <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--text)' }}>{g.name}</span>
+              <div>
+                <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--text)' }}>{g.name}</span>
+                {/* Tampilkan siapa yang membuat */}
+                {creator && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                    <div className="avatar" style={{ width: 14, height: 14, fontSize: 7, background: getAvatarColor(creator.name), flexShrink: 0 }}>
+                      {getInitials(creator.name)}
+                    </div>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{creator.name.split(' ')[0]}</span>
+                  </div>
+                )}
+              </div>
               <span style={{ fontSize: 13, fontWeight: 600, color: done ? 'var(--green)' : 'var(--accent)', flexShrink: 0, marginLeft: 8 }}>{pct}%</span>
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>
@@ -229,9 +258,7 @@ export default function Goals() {
       <div className="card">
         <div className="section-title" style={{ color: 'var(--accent)' }}>Setup Diperlukan</div>
         <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 16 }}>Jalankan SQL berikut di <strong style={{ color: 'var(--text)' }}>Supabase Dashboard → SQL Editor</strong>:</p>
-        <pre style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, fontSize: 12, color: 'var(--text-sub)', overflow: 'auto', lineHeight: 1.6 }}>
-          {SETUP_SQL}
-        </pre>
+        <pre style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, fontSize: 12, color: 'var(--text-sub)', overflow: 'auto', lineHeight: 1.6 }}>{SETUP_SQL}</pre>
         <button className="btn btn-primary" onClick={loadGoals} style={{ marginTop: 16 }}>Coba Lagi</button>
       </div>
     </div>
@@ -242,7 +269,7 @@ export default function Goals() {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 className="page-title">Tabungan & Goals</h1>
-          <p className="page-sub">Rencanakan dan pantau target keuangan</p>
+          <p className="page-sub">Rencanakan dan pantau target keuangan bersama</p>
         </div>
         <button className="btn btn-primary" onClick={() => { setEditData(null); setShowModal(true) }}>
           <PlusCircle size={16} /> Buat Goal

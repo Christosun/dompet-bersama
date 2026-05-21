@@ -294,9 +294,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Smart Insights */}
-      {!loading && <SmartInsights transactions={transactions} budgets={budgets} spending={spending} />}
-
       {/* Charts */}
       <div className="grid-2" style={{ marginBottom: 24 }}>
         <div className="card">
@@ -345,6 +342,9 @@ export default function Dashboard() {
           }
         </div>
       </div>
+
+      {/* Smart Insights */}
+      {!loading && <SmartInsights transactions={transactions} budgets={budgets} spending={spending} />}
 
       {/* Calendar Heatmap */}
       {!loading && transactions.length > 0 && (

@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useConfirm } from '../contexts/ConfirmContext'
-import { formatRupiah } from '../lib/utils'
+import { formatRupiah, getInitials, getAvatarColor } from '../lib/utils'
 import { PlusCircle, X, Pencil, RefreshCw, Pause, Play } from 'lucide-react'
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
@@ -23,7 +23,10 @@ create table if not exists recurring_transactions (
   created_at timestamptz default now()
 );
 alter table recurring_transactions enable row level security;
-create policy "Users manage own recurring" on recurring_transactions for all using (auth.uid() = user_id) with check (auth.uid() = user_id);`
+create policy "All can read recurring" on recurring_transactions for select using (auth.role() = 'authenticated');
+create policy "Users insert recurring" on recurring_transactions for insert with check (auth.uid() = user_id);
+create policy "All can update recurring" on recurring_transactions for update using (auth.role() = 'authenticated');
+create policy "All can delete recurring" on recurring_transactions for delete using (auth.role() = 'authenticated');`
 
 const FREQ_LABEL = { daily: 'Setiap hari', weekly: 'Setiap minggu', monthly: 'Setiap bulan' }
 
@@ -134,6 +137,7 @@ export default function Recurring() {
   const confirm = useConfirm()
   const [items, setItems] = useState([])
   const [categories, setCategories] = useState([])
+  const [profiles, setProfiles] = useState({})
   const [loading, setLoading] = useState(true)
   const [tableMissing, setTableMissing] = useState(false)
   const [showModal, setShowModal] = useState(false)
@@ -143,12 +147,18 @@ export default function Recurring() {
 
   async function loadAll() {
     setLoading(true)
-    const [{ data: recs, error }, { data: cats }] = await Promise.all([
-      supabase.from('recurring_transactions').select('*, categories(name, icon, color)').eq('user_id', user.id).order('created_at', { ascending: false }),
+    const [{ data: recs, error }, { data: cats }, { data: profs }] = await Promise.all([
+      supabase.from('recurring_transactions').select('*, categories(name, icon, color)').order('created_at', { ascending: false }),
       supabase.from('categories').select('*').order('name'),
+      supabase.from('profiles').select('id, name'),
     ])
     if (error?.code === '42P01') setTableMissing(true)
-    else setItems(recs || [])
+    else {
+      setItems(recs || [])
+      const pm = {}
+      ;(profs || []).forEach(p => pm[p.id] = p)
+      setProfiles(pm)
+    }
     setCategories(cats || [])
     setLoading(false)
   }
@@ -204,7 +214,9 @@ export default function Recurring() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {items.map(item => (
+          {items.map(item => {
+            const creator = profiles[item.user_id]
+            return (
             <div key={item.id} className="card card-sm" style={{ opacity: item.active ? 1 : 0.55, transition: 'opacity 0.2s' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 42, height: 42, borderRadius: 10, background: `${item.categories?.color || '#6b7280'}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -217,10 +229,19 @@ export default function Recurring() {
                       {item.type === 'income' ? '+' : '-'}{formatRupiah(item.amount)}
                     </span>
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                    {FREQ_LABEL[item.frequency]}
-                    {item.note && ` · ${item.note}`}
-                    {!item.active && <span style={{ color: 'var(--red)', marginLeft: 6 }}>· Nonaktif</span>}
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span>{FREQ_LABEL[item.frequency]}</span>
+                    {item.note && <span>· {item.note}</span>}
+                    {!item.active && <span style={{ color: 'var(--red)' }}>· Nonaktif</span>}
+                    {creator && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        ·
+                        <div className="avatar" style={{ width: 14, height: 14, fontSize: 7, background: getAvatarColor(creator.name), flexShrink: 0 }}>
+                          {getInitials(creator.name)}
+                        </div>
+                        <span style={{ fontSize: 11 }}>{creator.name.split(' ')[0]}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
@@ -232,7 +253,8 @@ export default function Recurring() {
                 </div>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
