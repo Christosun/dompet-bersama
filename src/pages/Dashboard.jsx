@@ -252,7 +252,7 @@ export default function Dashboard() {
     <div>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 className="page-title">Selamat datang, {profile?.name?.split(' ')[0]}</h1>
+          <h1 className="page-title">Selamat datang, {profile?.name?.split(' ')[0]} 👋</h1>
           <p className="page-sub">Ringkasan keuangan bersama bulan ini</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowModal(true)}>

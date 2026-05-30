@@ -21,8 +21,8 @@
   --radius: 16px;
   --radius-sm: 10px;
   --shadow: 0 4px 24px rgba(0,0,0,0.6);
-  --font-display: 'Playfair Display', serif;
-  --font-body: 'DM Sans', sans-serif;
+  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
   --sidebar-width: 240px;
   --topbar-height: 56px;
   --bottomnav-height: 60px;
@@ -31,6 +31,7 @@
 /* ── Prevent zoom on input focus (iOS) ── */
 input, select, textarea {
   font-size: 16px !important;
+  font-family: var(--font-body) !important;
 }
 
 html {
@@ -44,9 +45,10 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 14.5px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   /* Prevent iOS text size adjust */
   -webkit-text-size-adjust: 100%;
 }
@@ -93,8 +95,8 @@ body {
 
 .sidebar-logo {
   font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 700;
   background: var(--gold-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -102,19 +104,20 @@ body {
   padding: 0 24px 28px;
   border-bottom: 1px solid transparent;
   border-image: linear-gradient(90deg, rgba(212,168,67,0.4) 0%, transparent 100%) 1;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.01em;
   line-height: 1.3;
 }
 
 .sidebar-logo span {
   -webkit-text-fill-color: var(--text-muted);
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 11px;
   font-family: var(--font-body);
   display: block;
-  font-weight: 300;
-  margin-top: 2px;
+  font-weight: 400;
+  margin-top: 3px;
   background: none;
+  letter-spacing: 0.02em;
 }
 
 .sidebar-nav {
@@ -127,7 +130,7 @@ body {
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   color: var(--text-sub);
-  font-size: 14px; font-weight: 400;
+  font-size: 13.5px; font-weight: 500;
   cursor: pointer; border: none; background: none; width: 100%;
   text-align: left;
   transition: all 0.15s ease;
@@ -194,9 +197,9 @@ body {
 .stat-label {
   font-size: 11px;
   color: var(--text-muted);
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   margin-bottom: 8px;
   white-space: nowrap;
   overflow: hidden;
@@ -206,25 +209,26 @@ body {
 .stat-value {
   font-family: var(--font-display);
   font-size: 22px;
-  font-weight: 500;
+  font-weight: 700;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: -0.03em;
 }
 
 .stat-value.green { color: var(--green); }
 .stat-value.red { color: var(--red); }
 .stat-value.gold { color: var(--accent); }
-.stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-weight: 400; }
 
 /* ══════════════════════════════
    PAGE HEADER
 ══════════════════════════════ */
 
 .page-header { margin-bottom: 24px; }
-.page-title { font-family: var(--font-display); font-size: 28px; font-weight: 500; color: var(--text); }
-.page-sub { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+.page-title { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+.page-sub { color: var(--text-muted); font-size: 13px; margin-top: 4px; font-weight: 400; }
 
 /* ══════════════════════════════
    BUTTONS
@@ -233,7 +237,7 @@ body {
 .btn {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 10px 20px; border-radius: var(--radius-sm);
-  font-family: var(--font-body); font-size: 14px; font-weight: 500;
+  font-family: var(--font-body); font-size: 13.5px; font-weight: 600;
   cursor: pointer; border: none; transition: all 0.15s ease;
   white-space: nowrap;
   flex-shrink: 0;
@@ -259,8 +263,8 @@ body {
 
 .form-label {
   display: block;
-  font-size: 12px; font-weight: 500;
-  text-transform: uppercase; letter-spacing: 0.07em;
+  font-size: 11.5px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
   color: var(--text-muted);
   margin-bottom: 8px;
 }
@@ -311,7 +315,7 @@ select.form-input option { background: var(--bg-card2); }
   overscroll-behavior: contain;
 }
 
-.modal-title { font-family: var(--font-display); font-size: 20px; margin-bottom: 20px; }
+.modal-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.01em; }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -515,8 +519,8 @@ select.form-input option { background: var(--bg-card2); }
 .empty-state h3 { font-size: 16px; color: var(--text-sub); margin-bottom: 6px; }
 
 .section-title {
-  font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
-  color: var(--text-muted); font-weight: 500; margin-bottom: 14px;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-muted); font-weight: 700; margin-bottom: 14px;
 }
 
 .cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
@@ -556,8 +560,8 @@ select.form-input option { background: var(--bg-card2); }
 }
 
 .auth-box { width: 100%; max-width: 400px; }
-.auth-logo { font-family: var(--font-display); font-size: 30px; color: var(--accent); margin-bottom: 2px; line-height: 1.2; }
-.auth-tagline { color: var(--text-muted); font-size: 14px; margin-bottom: 32px; line-height: 1.5; }
+.auth-logo { font-family: var(--font-display); font-size: 28px; font-weight: 800; color: var(--accent); margin-bottom: 2px; line-height: 1.15; letter-spacing: -0.03em; }
+.auth-tagline { color: var(--text-muted); font-size: 13px; margin-bottom: 32px; line-height: 1.6; font-weight: 400; }
 
 .auth-tabs {
   display: flex; background: var(--bg-card2);
@@ -583,7 +587,7 @@ select.form-input option { background: var(--bg-card2); }
    RECHARTS
 ══════════════════════════════ */
 
-.recharts-text { fill: var(--text-muted); font-family: var(--font-body); font-size: 11px; }
+.recharts-text { fill: var(--text-muted); font-family: var(--font-body); font-size: 11px; font-weight: 500; }
 
 /* ══════════════════════════════
    MOBILE TOP BAR — hidden on desktop
@@ -672,7 +676,7 @@ select.form-input option { background: var(--bg-card2); }
     color: var(--text-muted);
     text-decoration: none;
     font-size: 10px;
-    font-weight: 500;
+    font-weight: 600;
     transition: color 0.15s;
     padding: 8px 10px;
     scroll-snap-align: start;
@@ -774,6 +778,15 @@ select.form-input option { background: var(--bg-card2); }
    TOAST NOTIFICATIONS
 ══════════════════════════════ */
 
+/* ── Savings tab styles ──────────────────────────────────── */
+.savings-tab-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 9px 16px; border-radius: 9px; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 600; transition: all 0.2s;
+  font-family: var(--font-body);
+}
+
+/* ── Toast container ─────────────────────────────────────── */
 .toast-container {
   position: fixed;
   bottom: calc(var(--bottomnav-height) + env(safe-area-inset-bottom) + 16px);
