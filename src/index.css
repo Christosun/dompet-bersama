@@ -183,6 +183,14 @@ body {
   margin-bottom: 24px;
 }
 
+/* ── 3-card variant: 3 equal columns on desktop ── */
+.stat-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
 .stat-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -478,6 +486,66 @@ select.form-input option { background: var(--bg-card2); }
   transition: width 0.6s ease;
 }
 
+/* ── Budget card info row ─────────────────────────────── */
+.budget-info-row {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 3px 0;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── Report accumulation bottom stats ────────────────── */
+.report-month-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.report-month-stat-item {
+  padding: 8px 14px;
+  border-right: 1px solid var(--border);
+}
+.report-month-stat-avg {
+  border-right: none;
+}
+
+@media (max-width: 600px) {
+  .report-month-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  /* Odd items (col 1): border-right */
+  .report-month-stat-item:nth-child(odd) {
+    border-right: 1px solid var(--border);
+  }
+  /* Even items (col 2): no right border */
+  .report-month-stat-item:nth-child(even) {
+    border-right: none;
+  }
+  /* Top row items: border-bottom */
+  .report-month-stat-item:nth-child(1),
+  .report-month-stat-item:nth-child(2) {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 14px;
+    margin-bottom: 2px;
+  }
+  /* Bottom row items: no top border needed */
+  .report-month-stat-item:nth-child(3),
+  .report-month-stat-item:nth-child(4) {
+    padding-top: 12px;
+  }
+}
+
+@media (max-width: 380px) {
+  .budget-info-row {
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
 /* ══════════════════════════════
    TYPE TOGGLE
 ══════════════════════════════ */
@@ -604,6 +672,13 @@ select.form-input option { background: var(--bg-card2); }
   .stat-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  /* 3-card grid: 2 cols + last card full-width (no orphan) */
+  .stat-grid-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .stat-grid-3 > *:last-child {
+    grid-column: 1 / -1;
+  }
 
   .stat-value { font-size: 20px; }
 }
@@ -698,6 +773,8 @@ select.form-input option { background: var(--bg-card2); }
 
   /* ── Grids ── */
   .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-grid-3 { grid-template-columns: 1fr 1fr; gap: 10px; }
+  /* Last card still spans full width on mobile (rule inherited from 1024px) */
   .grid-2 { grid-template-columns: 1fr; }
   .grid-3 { grid-template-columns: 1fr; }
 

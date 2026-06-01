@@ -541,36 +541,28 @@ export default function Reports() {
               </ComposedChart>
             </ResponsiveContainer>
 
-            {/* Bottom context row */}
+            {/* Bottom context row — responsive 2×2 on mobile */}
             {hasAvgData && (
-              <div style={{
-                display: 'flex',
-                gap: 0,
-                marginTop: 16,
-                paddingTop: 16,
-                borderTop: '1px solid var(--border)',
-              }}>
+              <div className="report-month-stats">
                 {[0, 1, 2].map(idx => {
                   const p = subtractMonths(month, year, idx + 1)
                   const total = prevCumsByDay[idx]?.total || 0
                   return (
-                    <div key={idx} style={{
-                      flex: 1,
-                      padding: '0 16px',
-                      borderRight: idx < 2 ? '1px solid var(--border)' : 'none',
-                    }}>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
+                    <div key={idx} className="report-month-stat-item">
+                      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: 5 }}>
                         {getMonthName(p.month, p.year)}
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-sub)' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: '-0.01em' }}>
                         {formatRupiah(total)}
                       </div>
                     </div>
                   )
                 })}
-                <div style={{ flex: 1, padding: '0 16px' }}>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Rata-rata/bulan</div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--accent)' }}>
+                <div className="report-month-stat-item report-month-stat-avg">
+                  <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: 5 }}>
+                    Rata-rata/bulan
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', letterSpacing: '-0.01em' }}>
                     {formatRupiah(Math.round(
                       prevCumsByDay.filter(p => p.total > 0).reduce((s, p) => s + p.total, 0) /
                       Math.max(prevCumsByDay.filter(p => p.total > 0).length, 1)

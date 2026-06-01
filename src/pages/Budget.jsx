@@ -118,12 +118,14 @@ export default function Budget() {
     const { data: prevBudgets } = await supabase.from('budgets').select('*').eq('month', prevMonth).eq('year', prevYear)
     if (!prevBudgets || prevBudgets.length === 0) return
 
+    // Gunakan user.id (bukan b.user_id) agar RLS tidak reject
     const newBudgets = prevBudgets.map(b => ({
-      user_id: b.user_id, category_id: b.category_id, amount: b.amount, month: currentMonth, year: currentYear,
+      user_id: user.id, category_id: b.category_id, amount: b.amount, month: currentMonth, year: currentYear,
     }))
 
     const { data: inserted, error } = await supabase.from('budgets').upsert(newBudgets, { onConflict: 'category_id,month,year' }).select('*, categories(name, icon, color)')
     if (!error && inserted) setBudgets(inserted)
+    // Jika gagal (misal RLS), biarkan halaman kosong — user bisa pakai "Salin bulan lalu"
   }
 
   async function manualCopyOver() {
@@ -139,7 +141,7 @@ export default function Budget() {
     }
 
     const newBudgets = prevBudgets.map(b => ({
-      user_id: b.user_id, category_id: b.category_id, amount: b.amount, month, year,
+      user_id: user.id, category_id: b.category_id, amount: b.amount, month, year,
     }))
 
     await supabase.from('budgets').upsert(newBudgets, { onConflict: 'category_id,month,year' })
@@ -212,7 +214,7 @@ export default function Budget() {
       ) : (
         <>
           {/* Summary */}
-          <div className="stat-grid" style={{ marginBottom: 24 }}>
+          <div className="stat-grid-3" style={{ marginBottom: 24 }}>
             <div className="stat-card">
               <div className="stat-label">Total Budget</div>
               <div className="stat-value gold">{formatRupiah(totalBudget)}</div>
@@ -272,9 +274,9 @@ export default function Budget() {
                         <div className="budget-bar-track">
                           <div className="budget-bar-fill" style={{ width: `${Math.min(pct, 100)}%`, background: getBarColor(pct) }} />
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+                        <div className="budget-info-row">
                           <span>Terpakai: <span style={{ color: 'var(--text-sub)' }}>{formatRupiah(spent)}</span></span>
-                          <span>Sisa: <span style={{ color: left < 0 ? 'var(--red)' : 'var(--green)' }}>{formatRupiah(left)}</span></span>
+                          <span>Sisa: <span style={{ color: left < 0 ? 'var(--red)' : 'var(--green)', fontWeight: left < 0 ? 600 : 400 }}>{formatRupiah(left)}</span></span>
                           <span>Budget: <span style={{ color: 'var(--accent)' }}>{formatRupiah(b.amount)}</span></span>
                         </div>
                       </div>

@@ -230,7 +230,7 @@ export default function Transactions() {
       </div>
 
       {/* Summary stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 20 }}>
+      <div className="stat-grid-3" style={{ marginBottom: 20 }}>
         <div className="stat-card" style={{ padding: '14px 16px' }}>
           <div className="stat-label">Pemasukan</div>
           <div className="stat-value green" style={{ fontSize: 18 }}>{formatRupiah(totalIncome)}</div>
