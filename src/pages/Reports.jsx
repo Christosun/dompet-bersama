@@ -585,7 +585,7 @@ export default function Reports() {
               <div className="section-title">Kontribusi per Orang</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
                 {personData.map((p, i) => (
-                  <div key={p.name} style={{ padding: '14px 16px', background: 'var(--bg-card2)', borderRadius: 12, borderLeft: `3px solid ${PIE_COLORS[i % PIE_COLORS.length]}` }}>
+                  <div key={p.name} style={{ padding: '14px 16px', background: 'var(--bg-card2)', borderRadius: 12 }}>
                     <div style={{ fontWeight: 500, marginBottom: 8, color: 'var(--text)' }}>{p.name}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                       <span>Pengeluaran:</span><span style={{ color: 'var(--red)' }}>{formatRupiah(p.expense)}</span>

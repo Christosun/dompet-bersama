@@ -139,7 +139,7 @@ body {
 }
 
 .nav-item:hover { color: var(--text); background: var(--bg-card2); }
-.nav-item.active { color: var(--accent); background: linear-gradient(90deg, rgba(212,168,67,0.14) 0%, rgba(212,168,67,0.04) 100%); border-left: 2px solid var(--accent); padding-left: 10px; font-weight: 500; }
+.nav-item.active { color: var(--accent); background: linear-gradient(90deg, rgba(212,168,67,0.14) 0%, rgba(212,168,67,0.04) 100%); padding-left: 10px; font-weight: 500; }
 .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
 
 .sidebar-user {

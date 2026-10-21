@@ -158,7 +158,7 @@ export default function Categories() {
         {loading ? <SkeletonCategoryList count={4} /> : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
             {items.map(c => (
-              <div key={c.id} className="card card-sm" style={{ display: 'flex', alignItems: 'center', gap: 12, borderLeft: `3px solid ${c.color}` }}>
+              <div key={c.id} className="card card-sm" style={{ display: 'flex', alignItems: 'center', gap: 12  }}>
                 <div style={{ width: 36, height: 36, borderRadius: 8, background: `${c.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <CategoryIcon icon={c.icon} size={17} color={c.color} />
                 </div>
