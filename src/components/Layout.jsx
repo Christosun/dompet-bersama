@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useConfirm } from '../contexts/ConfirmContext'
-import { LayoutDashboard, ArrowLeftRight, Tag, Target, BarChart2, LogOut, Trophy, RefreshCw, Plus } from 'lucide-react'
+import { LayoutDashboard, ArrowLeftRight, Tag, Target, BarChart2, LogOut, Trophy, RefreshCw } from 'lucide-react'
 import TransactionModal from './TransactionModal'
 import Avatar from './Avatar'
+import DraggableFab from './DraggableFab'
 
 const sidebarItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -89,10 +90,8 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      {/* Mobile FAB */}
-      <button className="fab" onClick={() => setShowQuickAdd(true)} aria-label="Tambah transaksi">
-        <Plus size={22} strokeWidth={2.5} />
-      </button>
+      {/* Mobile FAB (bisa digeser) */}
+      <DraggableFab onClick={() => setShowQuickAdd(true)} />
 
       {showQuickAdd && (
         <TransactionModal
