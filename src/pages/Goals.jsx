@@ -8,7 +8,7 @@ import Avatar from '../components/Avatar'
 import {
   PlusCircle, X, Pencil, Trophy, CheckCircle, Plus,
   Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight,
-  Calendar, BarChart2, Target, AlertCircle, Clock, Layers,
+  Calendar, BarChart2, Target, AlertCircle, Clock, Layers, Landmark,
 } from 'lucide-react'
 
 /* ─── SQL Setup ──────────────────────────────────────────── */
@@ -21,9 +21,11 @@ create table if not exists goals (
   name text not null,
   target_amount decimal not null,
   current_amount decimal default 0,
+  from_savings_amount decimal default 0,
   deadline date,
   created_at timestamptz default now()
 );
+alter table goals add column if not exists from_savings_amount decimal default 0;
 alter table goals enable row level security;
 create policy "All can read goals" on goals for select using (auth.role() = 'authenticated');
 create policy "Users insert goals" on goals for insert with check (auth.uid() = user_id);
@@ -60,7 +62,22 @@ alter table monthly_savings enable row level security;
 create policy "All can read monthly_savings" on monthly_savings for select using (auth.role() = 'authenticated');
 create policy "All can insert monthly_savings" on monthly_savings for insert with check (auth.role() = 'authenticated');
 create policy "All can update monthly_savings" on monthly_savings for update using (auth.role() = 'authenticated');
-create policy "All can delete monthly_savings" on monthly_savings for delete using (auth.role() = 'authenticated');`
+create policy "All can delete monthly_savings" on monthly_savings for delete using (auth.role() = 'authenticated');
+
+-- 4. Penyesuaian saldo dengan bank
+create table if not exists savings_adjustments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null,
+  amount decimal not null,
+  balance_before decimal,
+  balance_after decimal,
+  note text,
+  created_at timestamptz default now()
+);
+alter table savings_adjustments enable row level security;
+create policy "All can read savings_adjustments" on savings_adjustments for select using (auth.role() = 'authenticated');
+create policy "Users insert savings_adjustments" on savings_adjustments for insert with check (auth.uid() = user_id);
+create policy "All can delete savings_adjustments" on savings_adjustments for delete using (auth.role() = 'authenticated');`
 
 const fmt = v => v ? parseInt(String(v).replace(/\D/g, '') || '0').toLocaleString('id-ID') : ''
 
@@ -132,7 +149,7 @@ function GoalModal({ data, onClose, onSaved }) {
 }
 
 /* ─── ContributeModal ────────────────────────────────────── */
-function ContributeModal({ goal, savingsBalance, onClose, onSaved }) {
+function ContributeModal({ goal, savingsId, savingsBalance, onClose, onSaved }) {
   const toast = useToast()
   const [amount, setAmount] = useState('')
   const [fromSavings, setFromSavings] = useState(false)
@@ -143,11 +160,28 @@ function ContributeModal({ goal, savingsBalance, onClose, onSaved }) {
     const add = parseFloat(amount.replace(/\D/g, ''))
     if (!add) return
     if (fromSavings && add > (savingsBalance || 0)) { toast.error('Jumlah melebihi saldo tabungan'); return }
+    if (fromSavings && !savingsId) { toast.error('Saldo tabungan belum diatur'); return }
     setLoading(true)
-    const { error: gErr } = await supabase.from('goals').update({ current_amount: (goal.current_amount || 0) + add }).eq('id', goal.id)
+
+    const prevCurrent = Number(goal.current_amount) || 0
+    const prevFromSavings = Number(goal.from_savings_amount) || 0
+
+    const { error: gErr } = await supabase.from('goals').update({
+      current_amount: prevCurrent + add,
+      from_savings_amount: prevFromSavings + (fromSavings ? add : 0),
+    }).eq('id', goal.id)
     if (gErr) { toast.error('Gagal: ' + gErr.message); setLoading(false); return }
+
     if (fromSavings) {
-      await supabase.from('savings_account').update({ current_balance: savingsBalance - add, updated_at: new Date().toISOString() }).gte('current_balance', 0)
+      const { error: sErr } = await supabase.from('savings_account')
+        .update({ current_balance: savingsBalance - add, updated_at: new Date().toISOString() })
+        .eq('id', savingsId)
+      if (sErr) {
+        // rollback goal supaya tidak tidak-sinkron
+        await supabase.from('goals').update({ current_amount: prevCurrent, from_savings_amount: prevFromSavings }).eq('id', goal.id)
+        toast.error('Gagal mengurangi saldo tabungan: ' + sErr.message)
+        setLoading(false); return
+      }
     }
     setLoading(false)
     toast.success(`+${formatRupiah(add)} ditambahkan ke "${goal.name}"${fromSavings ? ' dari saldo tabungan' : ''}`)
@@ -215,7 +249,7 @@ function InitBalanceModal({ currentInitial, onClose, onSaved }) {
           <button className="btn btn-icon btn-ghost" onClick={onClose}><X size={16} /></button>
         </div>
         <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20, lineHeight: 1.6 }}>
-          Masukkan jumlah tabungan yang sudah dimiliki sebelum menggunakan aplikasi ini. Jumlah ini menjadi titik awal saldo tabungan bersama.
+          Masukkan jumlah tabungan yang sudah dimiliki sebelum menggunakan aplikasi ini. Jumlah ini menjadi titik awal saldo tabungan bersama. Saldo akan dihitung ulang: saldo awal + total ditabung − dana dipakai goals + penyesuaian bank. Untuk menyamakan dengan bank, gunakan tombol &quot;Sesuaikan dengan Bank&quot;, bukan mengubah saldo awal.
         </p>
         <form onSubmit={handleSave}>
           <div className="form-group">
@@ -226,6 +260,67 @@ function InitBalanceModal({ currentInitial, onClose, onSaved }) {
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" className="btn btn-ghost" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>Batal</button>
             <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}>Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+/* ─── AdjustModal ────────────────────────────────────────── */
+function AdjustModal({ appBalance, onClose, onConfirm }) {
+  const [actual, setActual] = useState('')
+  const [note, setNote] = useState('')
+  const [loading, setLoading] = useState(false)
+  const actualNum = actual === '' ? null : parseFloat(actual)
+  const diff = actualNum === null ? null : actualNum - appBalance
+
+  async function handleSave(e) {
+    e.preventDefault()
+    if (actualNum === null || diff === 0) return
+    setLoading(true)
+    const ok = await onConfirm(actualNum, note.trim())
+    setLoading(false)
+    if (ok) onClose()
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 400 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <h2 className="modal-title" style={{ margin: 0 }}>Sesuaikan dengan Saldo Bank</h2>
+          <button className="btn btn-icon btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
+          Masukkan saldo tabungan yang tertera di bank/rekening. Selisihnya dicatat sebagai penyesuaian, saldo awal tidak berubah.
+        </p>
+        <div style={{ padding: '10px 14px', background: 'var(--accent-dim)', borderRadius: 10, border: '1px solid var(--border)', marginBottom: 16, display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+          <span style={{ color: 'var(--text-sub)' }}>Saldo di aplikasi</span>
+          <strong style={{ color: 'var(--text)' }}>{formatRupiah(appBalance)}</strong>
+        </div>
+        <form onSubmit={handleSave}>
+          <div className="form-group">
+            <label className="form-label">Saldo Aktual di Bank (Rp)</label>
+            <input className="form-input" type="text" inputMode="numeric" value={fmt(actual)}
+              onChange={e => setActual(e.target.value.replace(/\D/g, ''))} placeholder="0" required autoFocus style={{ fontSize: 22, fontWeight: 700 }} />
+          </div>
+          {diff !== null && (
+            <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 10, fontSize: 13, display: 'flex', justifyContent: 'space-between',
+              background: diff === 0 ? 'var(--bg)' : diff > 0 ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
+              border: `1px solid ${diff === 0 ? 'var(--border)' : diff > 0 ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)'}` }}>
+              <span style={{ color: 'var(--text-sub)' }}>{diff === 0 ? 'Sudah sama dengan bank' : 'Selisih'}</span>
+              {diff !== 0 && <strong style={{ color: diff > 0 ? 'var(--green)' : 'var(--red)' }}>{diff > 0 ? '+' : '-'}{formatRupiah(Math.abs(diff))}</strong>}
+            </div>
+          )}
+          <div className="form-group">
+            <label className="form-label">Catatan penyebab (opsional)</label>
+            <input className="form-input" value={note} onChange={e => setNote(e.target.value)} placeholder="Contoh: bunga bank, biaya admin, lupa catat" />
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button type="button" className="btn btn-ghost" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>Batal</button>
+            <button type="submit" className="btn btn-primary" disabled={loading || diff === null || diff === 0} style={{ flex: 1, justifyContent: 'center' }}>
+              {loading ? 'Menyimpan...' : 'Simpan Penyesuaian'}
+            </button>
           </div>
         </form>
       </div>
@@ -312,6 +407,8 @@ export default function Goals() {
   const [showGoalModal, setShowGoalModal] = useState(false)
   const [editGoalData, setEditGoalData] = useState(null)
   const [contributeGoal, setContributeGoal] = useState(null)
+  const [adjustments, setAdjustments] = useState([])
+  const [showAdjustModal, setShowAdjustModal] = useState(false)
 
   useEffect(() => { loadAll() }, [])
   useEffect(() => { loadMonthData(rekapMonth, rekapYear) }, [rekapMonth, rekapYear])
@@ -323,15 +420,18 @@ export default function Goals() {
       { data: histData, error: histErr },
       { data: goalsData, error: goalsErr },
       { data: profsData },
+      { data: adjData, error: adjErr },
     ] = await Promise.all([
       supabase.from('savings_account').select('*').limit(1).maybeSingle(),
       supabase.from('monthly_savings').select('*').order('year', { ascending: false }).order('month', { ascending: false }),
       supabase.from('goals').select('*').order('created_at', { ascending: false }),
       supabase.from('profiles').select('id, name'),
+      supabase.from('savings_adjustments').select('*').order('created_at', { ascending: false }),
     ])
-    if (savErr?.code === '42P01' || histErr?.code === '42P01' || goalsErr?.code === '42P01') {
+    if (savErr?.code === '42P01' || histErr?.code === '42P01' || goalsErr?.code === '42P01' || adjErr?.code === '42P01') {
       setTableMissing(true); setLoading(false); return
     }
+    setAdjustments(adjData || [])
     setSavings(savData || null)
     setMonthlyHistory(histData || [])
     setGoals(goalsData || [])
@@ -354,8 +454,10 @@ export default function Goals() {
   }
 
   async function handleSetInitialBalance(amount) {
-    const totalAdded = monthlyHistory.reduce((s, m) => s + Number(m.added_to_balance), 0)
-    const newBalance = amount + totalAdded
+    const totalAddedNow = monthlyHistory.reduce((s, m) => s + Number(m.added_to_balance), 0)
+    const usedNow = goals.reduce((s, g) => s + (Number(g.from_savings_amount) || 0), 0)
+    const adjNow = adjustments.reduce((s, a) => s + Number(a.amount), 0)
+    const newBalance = amount + totalAddedNow - usedNow + adjNow
     if (savings) {
       const { error } = await supabase.from('savings_account')
         .update({ initial_balance: amount, current_balance: newBalance, updated_at: new Date().toISOString() })
@@ -413,11 +515,71 @@ export default function Goals() {
     }
   }
 
-  async function deleteGoal(id, name) {
-    const ok = await confirm({ title: 'Hapus Goal', message: `"${name}" akan dihapus permanen.`, confirmLabel: 'Hapus' })
+  async function deleteGoal(g) {
+    const refund = Number(g.from_savings_amount) || 0
+    const ok = await confirm({
+      title: 'Hapus Goal',
+      message: refund > 0
+        ? `"${g.name}" akan dihapus permanen. ${formatRupiah(refund)} yang dipakai dari saldo tabungan akan dikembalikan ke saldo.`
+        : `"${g.name}" akan dihapus permanen.`,
+      confirmLabel: 'Hapus',
+    })
     if (!ok) return
-    await supabase.from('goals').delete().eq('id', id)
-    toast.success('Goal dihapus'); loadAll()
+
+    const { error } = await supabase.from('goals').delete().eq('id', g.id)
+    if (error) { toast.error('Gagal menghapus: ' + error.message); return }
+
+    if (refund > 0 && savings) {
+      const { error: sErr } = await supabase.from('savings_account')
+        .update({ current_balance: Number(savings.current_balance) + refund, updated_at: new Date().toISOString() })
+        .eq('id', savings.id)
+      if (sErr) { toast.error('Goal terhapus, tapi gagal mengembalikan saldo: ' + sErr.message); loadAll(); return }
+      toast.success(`Goal dihapus, ${formatRupiah(refund)} dikembalikan ke saldo tabungan`)
+    } else {
+      toast.success('Goal dihapus')
+    }
+    loadAll()
+  }
+
+  async function handleAdjust(actual, note) {
+    if (!savings) { toast.error('Atur saldo awal terlebih dahulu'); return false }
+    const before = Number(savings.current_balance) || 0
+    const diff = actual - before
+    const { data: adj, error } = await supabase.from('savings_adjustments')
+      .insert({ user_id: user.id, amount: diff, balance_before: before, balance_after: actual, note: note || null })
+      .select().single()
+    if (error) { toast.error('Gagal: ' + error.message); return false }
+    const { error: sErr } = await supabase.from('savings_account')
+      .update({ current_balance: actual, updated_at: new Date().toISOString() })
+      .eq('id', savings.id)
+    if (sErr) {
+      await supabase.from('savings_adjustments').delete().eq('id', adj.id)
+      toast.error('Gagal memperbarui saldo: ' + sErr.message)
+      return false
+    }
+    toast.success(`Saldo disesuaikan dengan bank (${diff > 0 ? '+' : '-'}${formatRupiah(Math.abs(diff))})`)
+    loadAll()
+    return true
+  }
+
+  async function deleteAdjustment(a) {
+    const amt = Number(a.amount) || 0
+    const ok = await confirm({
+      title: 'Hapus Penyesuaian',
+      message: `Penyesuaian ${amt > 0 ? '+' : '-'}${formatRupiah(Math.abs(amt))} dibatalkan. Saldo tabungan akan ${amt > 0 ? 'dikurangi' : 'ditambah'} ${formatRupiah(Math.abs(amt))}.`,
+      confirmLabel: 'Hapus',
+    })
+    if (!ok) return
+    const { error } = await supabase.from('savings_adjustments').delete().eq('id', a.id)
+    if (error) { toast.error('Gagal menghapus: ' + error.message); return }
+    if (savings) {
+      const { error: sErr } = await supabase.from('savings_account')
+        .update({ current_balance: Number(savings.current_balance) - amt, updated_at: new Date().toISOString() })
+        .eq('id', savings.id)
+      if (sErr) { toast.error('Penyesuaian terhapus, tapi saldo gagal diperbarui: ' + sErr.message); loadAll(); return }
+    }
+    toast.success('Penyesuaian dibatalkan')
+    loadAll()
   }
 
   async function deleteMonthlyRecord(rec) {
@@ -449,6 +611,10 @@ export default function Goals() {
   const savingRate = monthData.income > 0 ? Math.min(Math.round(Math.max(net, 0) / monthData.income * 100), 100) : 0
   const totalAdded = monthlyHistory.reduce((s, m) => s + Number(m.added_to_balance), 0)
 
+  const goalsUsingSavings = goals.filter(g => Number(g.from_savings_amount) > 0)
+  const totalUsedFromSavings = goalsUsingSavings.reduce((s, g) => s + Number(g.from_savings_amount), 0)
+  const totalAdjustments = adjustments.reduce((s, a) => s + Number(a.amount), 0)
+
   const activeGoals = goals.filter(g => (g.current_amount || 0) < g.target_amount)
   const completedGoals = goals.filter(g => (g.current_amount || 0) >= g.target_amount)
 
@@ -468,7 +634,7 @@ export default function Goals() {
     const isUrgent = daysLeft !== null && daysLeft <= 30
 
     return (
-      <div className="card card-sm" style={{ borderLeft: `3px solid ${done ? 'var(--green)' : 'var(--accent)'}`, transition: 'border-color 0.2s' }}>
+      <div className="card card-sm" style={{ transition: 'border-color 0.2s' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
           <div style={{ width: 46, height: 46, borderRadius: 14, background: done ? 'var(--green-dim)' : 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             {done ? <CheckCircle size={22} color="var(--green)" /> : <Trophy size={22} color="var(--accent)" />}
@@ -503,6 +669,13 @@ export default function Goals() {
               <div className="budget-bar-fill" style={{ width: `${pct}%`, background: done ? 'var(--green)' : 'var(--gold-gradient)', borderRadius: 99, transition: 'width 0.5s ease' }} />
             </div>
 
+            {/* Info: dana dari saldo tabungan */}
+            {Number(g.from_savings_amount) > 0 && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#60a5fa', background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.2)', borderRadius: 99, padding: '2px 10px', marginBottom: 6 }}>
+                <Wallet size={11} /> {formatRupiah(g.from_savings_amount)} dari saldo tabungan
+              </div>
+            )}
+
             {/* Footer */}
             {!done && (
               <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -522,7 +695,7 @@ export default function Goals() {
             )}
             <div style={{ display: 'flex', gap: 4 }}>
               <button className="btn btn-icon btn-ghost btn-sm" onClick={() => { setEditGoalData(g); setShowGoalModal(true) }}><Pencil size={12} /></button>
-              <button className="btn btn-icon btn-danger btn-sm" onClick={() => deleteGoal(g.id, g.name)}><X size={12} /></button>
+              <button className="btn btn-icon btn-danger btn-sm" onClick={() => deleteGoal(g)}><X size={12} /></button>
             </div>
           </div>
         </div>
@@ -608,9 +781,14 @@ export default function Goals() {
                       </div>
                       <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(245,166,35,0.7)' }}>Saldo Tabungan</span>
                     </div>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setShowInitModal(true)} style={{ fontSize: 11, gap: 5, padding: '5px 10px' }}>
-                      <Pencil size={11} /> Edit Saldo Awal
-                    </button>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      <button className="btn btn-primary btn-sm" onClick={() => setShowAdjustModal(true)} disabled={!savings} style={{ fontSize: 11, gap: 5, padding: '5px 10px' }}>
+                        <Landmark size={11} /> Sesuaikan dengan Bank
+                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setShowInitModal(true)} style={{ fontSize: 11, gap: 5, padding: '5px 10px' }}>
+                        <Pencil size={11} /> Edit Saldo Awal
+                      </button>
+                    </div>
                   </div>
 
                   {/* Balance amount */}
@@ -629,6 +807,13 @@ export default function Goals() {
                       <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--green)' }}>+{formatRupiah(totalAdded)}</div>
                       <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>dari {monthlyHistory.filter(m => m.added_to_balance > 0).length} bulan</div>
                     </div>
+                    {totalUsedFromSavings > 0 && (
+                      <div style={{ flex: 1, minWidth: 120, padding: '10px 14px', background: 'rgba(255,255,255,0.04)', borderRadius: 10, border: '1px solid rgba(96,165,250,0.2)' }}>
+                        <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(96,165,250,0.7)', marginBottom: 4 }}>Terpakai untuk Goals</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#60a5fa' }}>-{formatRupiah(totalUsedFromSavings)}</div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>dari {goalsUsingSavings.length} goal</div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Setup prompt if no savings */}
@@ -642,6 +827,60 @@ export default function Goals() {
                   )}
                 </div>
               </div>
+
+              {/* Rincian saldo dipakai goals */}
+              {goalsUsingSavings.length > 0 && (
+                <div className="card card-sm">
+                  <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Trophy size={11} /> Saldo Dipakai Goals
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {goalsUsingSavings.map(g => (
+                      <div key={g.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '8px 12px', background: 'var(--bg-card2)', borderRadius: 8 }}>
+                        <span style={{ color: 'var(--text-sub)' }}>{g.name}</span>
+                        <span style={{ color: '#60a5fa', fontWeight: 600 }}>-{formatRupiah(g.from_savings_amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 10 }}>
+                    Jika goal dihapus, dana ini otomatis kembali ke saldo tabungan.
+                  </div>
+                </div>
+              )}
+
+              {/* Riwayat penyesuaian bank */}
+              {adjustments.length > 0 && (
+                <div className="card card-sm">
+                  <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Landmark size={11} /> Penyesuaian dengan Bank
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {adjustments.map(a => {
+                      const amt = Number(a.amount) || 0
+                      const who = profiles[a.user_id]
+                      return (
+                        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg-card2)', borderRadius: 8 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>{a.note || 'Penyesuaian saldo'}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                              {new Date(a.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {who ? ` · ${who.name.split(' ')[0]}` : ''}
+                              {a.balance_before != null && ` · ${formatRupiah(a.balance_before)} → ${formatRupiah(a.balance_after)}`}
+                            </div>
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: amt >= 0 ? 'var(--green)' : 'var(--red)', flexShrink: 0 }}>
+                            {amt >= 0 ? '+' : '-'}{formatRupiah(Math.abs(amt))}
+                          </span>
+                          <button className="btn btn-icon btn-danger btn-sm" onClick={() => deleteAdjustment(a)} style={{ flexShrink: 0 }}><X size={12} /></button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 10 }}>
+                    Total penyesuaian: <strong style={{ color: totalAdjustments >= 0 ? 'var(--green)' : 'var(--red)' }}>{totalAdjustments >= 0 ? '+' : '-'}{formatRupiah(Math.abs(totalAdjustments))}</strong>. Selisih saldo aplikasi vs bank yang sudah dikoreksi.
+                  </div>
+                </div>
+              )}
 
               {/* Rekap Bulan Card */}
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -802,6 +1041,14 @@ export default function Goals() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                  {totalUsedFromSavings > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: 'rgba(96,165,250,0.08)', border: '1px solid rgba(96,165,250,0.2)', borderRadius: 12 }}>
+                      <Wallet size={15} color="#60a5fa" style={{ flexShrink: 0 }} />
+                      <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+                        Total <strong style={{ color: '#60a5fa' }}>{formatRupiah(totalUsedFromSavings)}</strong> dari saldo tabungan dipakai oleh {goalsUsingSavings.length} goal. Jika goal dihapus, dana kembali ke saldo.
+                      </span>
+                    </div>
+                  )}
                   {activeGoals.length > 0 && (
                     <div>
                       <div className="section-title">Sedang Berjalan ({activeGoals.length})</div>
@@ -830,12 +1077,16 @@ export default function Goals() {
         <GoalModal data={editGoalData} onClose={() => { setShowGoalModal(false); setEditGoalData(null) }} onSaved={loadAll} />
       )}
       {contributeGoal && (
-        <ContributeModal goal={contributeGoal} savingsBalance={savings?.current_balance || 0}
+        <ContributeModal goal={contributeGoal} savingsId={savings?.id} savingsBalance={savings?.current_balance || 0}
           onClose={() => setContributeGoal(null)} onSaved={loadAll} />
       )}
       {showInitModal && (
         <InitBalanceModal currentInitial={savings?.initial_balance || 0}
           onClose={() => setShowInitModal(false)} onSaved={handleSetInitialBalance} />
+      )}
+      {showAdjustModal && (
+        <AdjustModal appBalance={Number(savings?.current_balance) || 0}
+          onClose={() => setShowAdjustModal(false)} onConfirm={handleAdjust} />
       )}
       {showFinalizeModal && (
         <FinalizeModal month={rekapMonth} year={rekapYear}
