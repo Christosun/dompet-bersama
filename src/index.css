@@ -296,19 +296,23 @@ select.form-input option { background: var(--bg-card2); }
 /* ── Tema gelap untuk date/time picker native ── */
 :root { color-scheme: dark; }
 
-input[type="date"],
-input[type="time"],
-input[type="month"],
-select {
-  color-scheme: dark;
-}
-
-/* Ikon kalender: putih, tanpa efek hover */
+/* Ikon kalender: putih (bawaan tema gelap), tanpa padding supaya tinggi input tidak berubah */
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator,
 input[type="month"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
+  padding: 0;
+  margin: 0;
   opacity: 1;
+}
+
+/* Samakan tinggi semua kontrol form (select, teks, tanggal) */
+.form-input { min-height: 48px; }
+
+input[type="date"].form-input,
+input[type="time"].form-input,
+input[type="month"].form-input {
+  height: 48px;
 }
 
 /* ══════════════════════════════
