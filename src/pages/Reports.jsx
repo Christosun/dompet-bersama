@@ -131,6 +131,7 @@ export default function Reports() {
   const [prevMonthsData, setPrevMonthsData] = useState([[], [], []])
   const [profiles, setProfiles] = useState({})
   const [loading, setLoading] = useState(true)
+  const [dailyFilter, setDailyFilter] = useState('all')
 
   useEffect(() => { loadData() }, [month, year])
 
@@ -346,7 +347,35 @@ export default function Reports() {
           {/* Daily bar + pie */}
           <div className="grid-2">
             <div className="card">
-              <div className="section-title">Aktivitas Harian</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+                <div className="section-title" style={{ margin: 0 }}>Aktivitas Harian</div>
+                <div className="type-toggle" style={{ minWidth: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => setDailyFilter('all')}
+                    style={dailyFilter === 'all' ? { background: 'var(--accent-dim)', color: 'var(--accent)', padding: '6px 12px', fontSize: 12 } : { padding: '6px 12px', fontSize: 12 }}
+                  >
+                    Semua
+                  </button>
+                  <button
+                    type="button"
+                    className={dailyFilter === 'income' ? 'active-income' : ''}
+                    onClick={() => setDailyFilter('income')}
+                    style={{ padding: '6px 12px', fontSize: 12 }}
+                  >
+                    Pemasukan
+                  </button>
+                  <button
+                    type="button"
+                    className={dailyFilter === 'expense' ? 'active-expense' : ''}
+                    onClick={() => setDailyFilter('expense')}
+                    style={{ padding: '6px 12px', fontSize: 12 }}
+                  >
+                    Pengeluaran
+                  </button>
+                </div>
+              </div>
+
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={dailyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} interval={4} />
@@ -359,8 +388,12 @@ export default function Reports() {
                     labelFormatter={v => `Hari ke-${v}`}
                     cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                   />
-                  <Bar dataKey="income" name="Pemasukan" fill="var(--green)" radius={[3,3,0,0]} opacity={0.8} />
-                  <Bar dataKey="expense" name="Pengeluaran" fill="var(--accent)" radius={[3,3,0,0]} opacity={0.8} />
+                  {(dailyFilter === 'all' || dailyFilter === 'income') && (
+                    <Bar dataKey="income" name="Pemasukan" fill="var(--green)" radius={[3,3,0,0]} opacity={0.8} />
+                  )}
+                  {(dailyFilter === 'all' || dailyFilter === 'expense') && (
+                    <Bar dataKey="expense" name="Pengeluaran" fill="var(--accent)" radius={[3,3,0,0]} opacity={0.8} />
+                  )}
                   <Legend wrapperStyle={{ fontSize: 11, color: 'var(--text-muted)' }} />
                 </BarChart>
               </ResponsiveContainer>
