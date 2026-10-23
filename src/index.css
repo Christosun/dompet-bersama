@@ -293,6 +293,24 @@ body {
 .form-input::placeholder { color: var(--text-muted); }
 select.form-input option { background: var(--bg-card2); }
 
+/* ── Tema gelap untuk date/time picker native ── */
+:root { color-scheme: dark; }
+
+input[type="date"],
+input[type="time"],
+input[type="month"],
+select {
+  color-scheme: dark;
+}
+
+/* Ikon kalender: putih, tanpa efek hover */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1;
+}
+
 /* ══════════════════════════════
    MODAL
 ══════════════════════════════ */

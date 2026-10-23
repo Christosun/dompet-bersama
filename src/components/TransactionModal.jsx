@@ -112,11 +112,9 @@ export default function TransactionModal({ onClose, onSaved, editData }) {
             </select>
           </div>
 
-          <div className="grid-2">
-            <div className="form-group">
-              <label className="form-label">Tanggal</label>
-              <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
-            </div>
+          <div className="form-group">
+            <label className="form-label">Tanggal</label>
+            <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
 
           <div className="form-group">
