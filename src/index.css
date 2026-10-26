@@ -739,7 +739,9 @@ input[type="month"].form-input {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 55%;
+    max-width: none;
+    flex: 1;
+    min-width: 0;
   }
 
   /* ── Mobile Bottom Nav — horizontally scrollable ── */

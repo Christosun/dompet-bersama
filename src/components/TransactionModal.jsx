@@ -119,7 +119,7 @@ export default function TransactionModal({ onClose, onSaved, editData }) {
 
           <div className="form-group">
             <label className="form-label">Catatan (opsional)</label>
-            <input className="form-input" type="text" placeholder="Contoh: Makan siang di warung" value={note} onChange={e => setNote(e.target.value)} />
+            <input className="form-input" type="text" placeholder="Cth: Makan siang di warung" value={note} onChange={e => setNote(e.target.value)} />
           </div>
 
           <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>

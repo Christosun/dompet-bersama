@@ -118,7 +118,7 @@ function RecurringModal({ data, categories, onClose, onSaved }) {
           </div>
           <div className="form-group">
             <label className="form-label">Catatan (opsional)</label>
-            <input className="form-input" type="text" placeholder="Contoh: Cicilan, langganan" value={note} onChange={e => setNote(e.target.value)} />
+            <input className="form-input" type="text" placeholder="Cth: Cicilan, langganan" value={note} onChange={e => setNote(e.target.value)} />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" className="btn btn-ghost" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>Batal</button>
@@ -211,7 +211,7 @@ export default function Recurring() {
         <div className="empty-state">
           <div className="icon"><RefreshCw size={44} strokeWidth={1.2} /></div>
           <h3>Belum ada transaksi berulang</h3>
-          <p>Contoh: cicilan bulanan, langganan streaming, gaji</p>
+          <p>Cth: cicilan bulanan, langganan streaming, gaji</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

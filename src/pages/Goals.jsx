@@ -120,7 +120,7 @@ function GoalModal({ data, onClose, onSaved }) {
         <form onSubmit={handleSave}>
           <div className="form-group">
             <label className="form-label">Nama Goal</label>
-            <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="Contoh: Dana darurat, Liburan" required />
+            <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="Cth: Dana darurat, Liburan" required />
           </div>
           <div className="form-group">
             <label className="form-label">Target (Rp)</label>
@@ -314,7 +314,7 @@ function AdjustModal({ appBalance, onClose, onConfirm }) {
           )}
           <div className="form-group">
             <label className="form-label">Catatan penyebab (opsional)</label>
-            <input className="form-input" value={note} onChange={e => setNote(e.target.value)} placeholder="Contoh: bunga bank, biaya admin, lupa catat" />
+            <input className="form-input" value={note} onChange={e => setNote(e.target.value)} placeholder="Cth: bunga bank, biaya admin, lupa catat" />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" className="btn btn-ghost" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>Batal</button>

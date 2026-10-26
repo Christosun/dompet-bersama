@@ -222,7 +222,7 @@ export default function Transactions() {
             <div className="form-label" style={{ marginBottom: 6 }}>Cari</div>
             <div style={{ position: 'relative' }}>
               <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input type="text" className="form-input" placeholder="Catatan atau kategori..." value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 32 }} />
+              <input type="text" className="form-input" placeholder="Catatan/kategori..." value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 32 }} />
             </div>
           </div>
           {hasFilter && <button className="btn btn-ghost btn-sm" onClick={clearFilters} style={{ alignSelf: 'flex-end' }}>Reset</button>}
