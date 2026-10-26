@@ -211,7 +211,7 @@ export default function Recurring() {
         <div className="empty-state">
           <div className="icon"><RefreshCw size={44} strokeWidth={1.2} /></div>
           <h3>Belum ada transaksi berulang</h3>
-          <p>Cth: cicilan bulanan, langganan streaming, gaji</p>
+          <p>Cth: Cicilan bulanan, langganan streaming, gaji</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

@@ -149,7 +149,7 @@ export default function AuthPage() {
                 <input
                   className="form-input"
                   type="text"
-                  placeholder="Contoh: Eto atau Noni"
+                  placeholder="Cth: Eto atau Noni"
                   value={name}
                   onChange={e => setName(e.target.value)}
                   required
