@@ -8,6 +8,8 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, CartesianGrid, ReferenceLine, Area, AreaChart, ComposedChart
 } from 'recharts'
+import ExportMenu from '../components/ExportMenu'
+import { exportReport } from '../lib/exportReport'
 
 const PIE_COLORS = ['#f5a623','#4ade80','#60a5fa','#f472b6','#a78bfa','#34d399','#f87171','#06b6d4','#fbbf24','#e879f9']
 
@@ -110,20 +112,6 @@ function CumulativeTooltip({ active, payload, label, avgLabel }) {
   )
 }
 
-function exportCSV(transactions, month, year) {
-  const header = 'Tanggal,Jenis,Kategori,Jumlah,Catatan'
-  const rows = transactions.map(t =>
-    [t.date, t.type === 'income' ? 'Pemasukan' : 'Pengeluaran', t.categories?.name || '', t.amount, t.note || ''].join(',')
-  )
-  const csv = [header, ...rows].join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `laporan-${year}-${String(month).padStart(2, '0')}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
-}
 
 export default function Reports() {
   const [{ month, year }, setMonthYear] = useState(getCurrentMonth())
@@ -301,6 +289,26 @@ export default function Reports() {
   // Top 5 expenses
   const topExpenses = [...transactions].filter(t => t.type === 'expense').sort((a, b) => b.amount - a.amount).slice(0, 5)
 
+  async function handleExport(format) {
+    const prevMonths = [0, 1, 2].map(idx => {
+      const p = subtractMonths(month, year, idx + 1)
+      return { label: getMonthName(p.month, p.year), total: prevCumsByDay[idx]?.total || 0 }
+    })
+    const withData = prevCumsByDay.filter(p => p.total > 0)
+    const avgMonthly = Math.round(withData.reduce((s, p) => s + p.total, 0) / Math.max(withData.length, 1))
+
+    await exportReport(format, {
+      month, year, transactions, profiles,
+      totalIncome, totalExpense, pieData, dailyData,
+      cumulativeData: cumulativeChartData,
+      hasAvgData, avgMonthNames, prevMonths, avgMonthly,
+      diffVsAvg, diffPct,
+      lastDay: lastAvailableDay, currentAtToday, avgAtToday,
+      isCurrentMonth, todayDay, daysInMonth,
+      personData, topExpenses,
+    })
+  }
+
   return (
     <div>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -309,9 +317,11 @@ export default function Reports() {
           <p className="page-sub">Analisis keuangan rumah tangga secara visual</p>
         </div>
         {!loading && transactions.length > 0 && (
-          <button className="btn btn-ghost" onClick={() => exportCSV(transactions, month, year)}>
-            <Download size={15} /> Export CSV
-          </button>
+          <ExportMenu
+            onExport={handleExport}
+            periodLabel={getMonthName(month, year)}
+            count={transactions.length}
+          />
         )}
       </div>
 
