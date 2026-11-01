@@ -1128,9 +1128,9 @@ body:has(.auth-page)::after {
   width: 348px; z-index: 500;
   padding: 10px;
   background: linear-gradient(180deg, #1a1d24 0%, #14171c 100%);
-  border: 1px solid var(--border-hover);
+  border: 1px solid var(--border);
   border-radius: 18px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 40px rgba(245,166,35,0.06);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
   transform-origin: top right;
   animation: exportPop 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }

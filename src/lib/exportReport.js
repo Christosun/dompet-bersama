@@ -394,7 +394,7 @@ async function buildPdf(d) {
       T(txt, ML + CW - 5 - badgeW / 2, top + 7.6, { size: 7, bold: true, color: col, align: 'center' })
     }
     doc.setFont('helvetica', 'normal'); doc.setFontSize(7)
-    T(fit(`Dibandingkan rata-rata ${d.avgMonthNames.join(', ')}`, CW - 10 - badgeW - 4), ML + 5, top + 7.6, { size: 7, color: C.muted })
+    T(fit(d.compare.subtitle, CW - 10 - badgeW - 4), ML + 5, top + 7.6, { size: 7, color: C.muted })
 
     legendRight([
       { label: 'Bulan ini', color: C.gold },

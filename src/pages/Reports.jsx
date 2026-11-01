@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus, BarChart2 as BarChartIcon, PieChart as PieChartIcon, Info, Download } from 'lucide-react'
+import { shiftMonth as subtractMonths, shortMonthName } from '../lib/months'
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus, PieChart as PieChartIcon, Info } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
-  LineChart, Line, CartesianGrid, ReferenceLine, Area, AreaChart, ComposedChart
+  Line, CartesianGrid, ReferenceLine, Area, ComposedChart
 } from 'recharts'
 import ExportMenu from '../components/ExportMenu'
+import ComparePicker from '../components/ComparePicker'
 import { exportReport } from '../lib/exportReport'
 
 const PIE_COLORS = ['#f5a623','#4ade80','#60a5fa','#f472b6','#a78bfa','#34d399','#f87171','#06b6d4','#fbbf24','#e879f9']
@@ -23,38 +25,28 @@ const TOOLTIP_STYLE = {
   boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
 }
 
-// Helper: get start/end date strings for a given month/year
+const PREF_KEY = 'report-compare-v1'
+const MODES = ['avg3', 'prev1', 'custom']
+
+function loadPref() {
+  try {
+    const p = JSON.parse(localStorage.getItem(PREF_KEY) || 'null')
+    if (p && MODES.includes(p.mode)) return p
+  } catch { /* abaikan */ }
+  return null
+}
+
+// Helper: start/end date strings untuk bulan/tahun tertentu
 function monthRange(month, year) {
   const start = `${year}-${String(month).padStart(2, '0')}-01`
-  //const end = new Date(year, month, 0).toISOString().split('T')[0]
   const end = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
   return { start, end }
 }
 
-// Helper: subtract N months
-function subtractMonths(month, year, n) {
-  let m = month - n
-  let y = year
-  while (m <= 0) { m += 12; y-- }
-  return { month: m, year: y }
-}
+const monthKey = m => `${m.year}-${m.month}`
 
-// Custom dot for the current month line
-function ActiveDot(props) {
-  const { cx, cy, value } = props
-  if (!value && value !== 0) return null
-  return <circle cx={cx} cy={cy} r={4} fill="#f5a623" stroke="#0d0f14" strokeWidth={2} />
-}
-
-// Custom dot for avg line — subtle
-function AvgDot(props) {
-  const { cx, cy, value } = props
-  if (!value && value !== 0) return null
-  return <circle cx={cx} cy={cy} r={3} fill="rgba(255,255,255,0.3)" stroke="none" />
-}
-
-// Custom Tooltip for the cumulative chart
-function CumulativeTooltip({ active, payload, label, avgLabel }) {
+// Tooltip custom untuk grafik akumulasi
+function CumulativeTooltip({ active, payload, label, refLabel }) {
   if (!active || !payload?.length) return null
 
   const current = payload.find(p => p.dataKey === 'current')
@@ -84,7 +76,7 @@ function CumulativeTooltip({ active, payload, label, avgLabel }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: diff != null ? 8 : 0 }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.45)' }}>
             <span style={{ width: 8, height: 2, background: 'rgba(255,255,255,0.45)', display: 'inline-block', borderRadius: 2 }} />
-            Rata-rata 3 bln
+            {refLabel || 'Pembanding'}
           </span>
           <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.6)' }}>{formatRupiah(avg.value)}</span>
         </div>
@@ -116,47 +108,78 @@ function CumulativeTooltip({ active, payload, label, avgLabel }) {
 export default function Reports() {
   const [{ month, year }, setMonthYear] = useState(getCurrentMonth())
   const [transactions, setTransactions] = useState([])
-  const [prevMonthsData, setPrevMonthsData] = useState([[], [], []])
   const [profiles, setProfiles] = useState({})
   const [loading, setLoading] = useState(true)
   const [dailyFilter, setDailyFilter] = useState('all')
 
+  // ── Pembanding akumulasi ───────────────────────────────────
+  const [compareMode, setCompareMode] = useState(() => loadPref()?.mode || 'avg3')
+  const [customPick, setCustomPick] = useState(() => {
+    const c = loadPref()?.custom
+    if (c && Number.isInteger(c.month) && Number.isInteger(c.year)) return c
+    const n = getCurrentMonth()
+    return subtractMonths(n.month, n.year, 2)
+  })
+  const [compareData, setCompareData] = useState({ key: '', list: [] })
+  const monthCache = useRef(new Map()) // "tahun-bulan" -> baris pengeluaran
+
+  // Bulan pembanding yang efektif (tidak boleh sama dengan bulan yang sedang dilihat)
+  const customEff = customPick.month === month && customPick.year === year
+    ? subtractMonths(month, year, 1)
+    : customPick
+  const compareMonths = compareMode === 'avg3'
+    ? [1, 2, 3].map(n => subtractMonths(month, year, n))
+    : compareMode === 'prev1'
+      ? [subtractMonths(month, year, 1)]
+      : [customEff]
+  const compareKey = compareMonths.map(monthKey).join('|')
+  const compareLoading = compareData.key !== compareKey
+
   useEffect(() => { loadData() }, [month, year])
+
+  useEffect(() => {
+    try { localStorage.setItem(PREF_KEY, JSON.stringify({ mode: compareMode, custom: customPick })) } catch { /* abaikan */ }
+  }, [compareMode, customPick])
+
+  // Muat data bulan pembanding (dengan cache supaya ganti opsi terasa instan)
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const cache = monthCache.current
+      const missing = compareMonths.filter(m => !cache.has(monthKey(m)))
+      if (missing.length) {
+        const results = await Promise.all(missing.map(m => {
+          const { start, end } = monthRange(m.month, m.year)
+          return supabase.from('transactions').select('date, amount')
+            .eq('type', 'expense').gte('date', start).lte('date', end)
+        }))
+        results.forEach((r, i) => {
+          if (r.error) console.error(r.error)
+          else cache.set(monthKey(missing[i]), r.data || [])
+        })
+      }
+      if (cancelled) return
+      setCompareData({
+        key: compareKey,
+        list: compareMonths.map(m => ({ ...m, rows: cache.get(monthKey(m)) || [] })),
+      })
+    })()
+    return () => { cancelled = true }
+  }, [compareKey])
 
   async function loadData() {
     setLoading(true)
     const { start, end } = monthRange(month, year)
 
-    // Fetch current month + 3 previous months in parallel
-    const prev1 = subtractMonths(month, year, 1)
-    const prev2 = subtractMonths(month, year, 2)
-    const prev3 = subtractMonths(month, year, 3)
-
-    const [
-      { data: txs },
-      { data: profs },
-      { data: p1 },
-      { data: p2 },
-      { data: p3 },
-    ] = await Promise.all([
+    const [{ data: txs }, { data: profs }] = await Promise.all([
       supabase.from('transactions').select('*, categories(name, icon, color)').gte('date', start).lte('date', end).order('date'),
       supabase.from('profiles').select('*'),
-      supabase.from('transactions').select('date, amount, type').eq('type', 'expense')
-        .gte('date', monthRange(prev1.month, prev1.year).start)
-        .lte('date', monthRange(prev1.month, prev1.year).end),
-      supabase.from('transactions').select('date, amount, type').eq('type', 'expense')
-        .gte('date', monthRange(prev2.month, prev2.year).start)
-        .lte('date', monthRange(prev2.month, prev2.year).end),
-      supabase.from('transactions').select('date, amount, type').eq('type', 'expense')
-        .gte('date', monthRange(prev3.month, prev3.year).start)
-        .lte('date', monthRange(prev3.month, prev3.year).end),
     ])
 
     const pm = {}
     ;(profs || []).forEach(p => pm[p.id] = p)
     setProfiles(pm)
     setTransactions(txs || [])
-    setPrevMonthsData([p1 || [], p2 || [], p3 || []])
     setLoading(false)
   }
 
@@ -194,7 +217,7 @@ export default function Reports() {
   const dailyData = Object.values(dailyMap)
 
   // ── Cumulative comparison chart ────────────────────────────
-  // Build cumulative for current month day-by-day
+  // Akumulasi bulan ini, hari demi hari
   const currentCumByDay = {}
   let runningCurrent = 0
   for (let d = 1; d <= daysInMonth; d++) {
@@ -203,78 +226,95 @@ export default function Reports() {
     currentCumByDay[d] = runningCurrent
   }
 
-  // Build cumulative per day for each of the 3 previous months
-  const prevCumsByDay = prevMonthsData.map((txArr, idx) => {
-    const prevM = subtractMonths(month, year, idx + 1)
-    const daysInPrevMonth = new Date(prevM.year, prevM.month, 0).getDate()
-
-    // daily expense map for that month
-    const dm = {}
-    for (let d = 1; d <= daysInPrevMonth; d++) {
-      const key = `${prevM.year}-${String(prevM.month).padStart(2,'0')}-${String(d).padStart(2,'0')}`
-      dm[d] = 0
-    }
-    txArr.forEach(t => {
-      const day = parseInt(t.date.split('-')[2])
-      dm[day] = (dm[day] || 0) + Number(t.amount)
+  // Akumulasi tiap bulan pembanding, hari demi hari
+  const compareSeries = compareData.list.map(c => {
+    const totalDays = new Date(c.year, c.month, 0).getDate()
+    const perDay = {}
+    c.rows.forEach(t => {
+      const day = parseInt(t.date.split('-')[2], 10)
+      perDay[day] = (perDay[day] || 0) + Number(t.amount)
     })
-
-    // cumulative
     const cum = {}
-    let running = 0
-    for (let d = 1; d <= daysInPrevMonth; d++) {
-      running += (dm[d] || 0)
-      cum[d] = running
-    }
-    return { cum, totalDays: daysInPrevMonth, total: running }
+    let run = 0
+    for (let d = 1; d <= totalDays; d++) { run += perDay[d] || 0; cum[d] = run }
+    return { month: c.month, year: c.year, label: getMonthName(c.month, c.year), cum, totalDays, total: run }
   })
+  const seriesWithData = compareSeries.filter(s => s.total > 0)
 
-  // For each day 1..daysInMonth, compute average cumulative across prev months
-  // We normalize to percentage-of-month to handle months with different day counts
   const today = new Date()
   const isCurrentMonth = month === (today.getMonth() + 1) && year === today.getFullYear()
   const todayDay = isCurrentMonth ? today.getDate() : daysInMonth
 
+  // Garis pembanding: pada hari ke-d, ambil akumulasi hari ke-d tiap bulan pembanding
+  // (jika bulan pembanding lebih pendek, dipakai total akhir bulannya), lalu dirata-rata.
   const cumulativeChartData = []
   for (let d = 1; d <= daysInMonth; d++) {
-    const pct = d / daysInMonth // fraction of current month
-
-    // For each prev month, interpolate their cumulative at the equivalent fraction
-    const avgValues = prevCumsByDay
-      .filter(p => p.total > 0) // only include months with data
-      .map(p => {
-        const equivalentDay = Math.round(pct * p.totalDays)
-        const clampedDay = Math.min(Math.max(equivalentDay, 1), p.totalDays)
-        return p.cum[clampedDay] || 0
-      })
-
-    const avgCum = avgValues.length > 0
-      ? Math.round(avgValues.reduce((s, v) => s + v, 0) / avgValues.length)
-      : null
-
-    const dataPoint = {
+    const vals = seriesWithData.map(s => s.cum[Math.min(d, s.totalDays)] || 0)
+    cumulativeChartData.push({
       day: d,
-      avg: avgCum,
-      // Only plot current if we've reached that day
+      avg: vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null,
       current: d <= todayDay ? Math.round(currentCumByDay[d] || 0) : null,
-    }
-    cumulativeChartData.push(dataPoint)
+    })
   }
 
-  // ── Insight: are we over or under vs avg? ─────────────────
+  // ── Insight: lebih boros atau hemat dibanding pembanding? ──
   const lastAvailableDay = Math.min(todayDay, daysInMonth)
   const currentAtToday = currentCumByDay[lastAvailableDay] || 0
   const avgAtToday = cumulativeChartData[lastAvailableDay - 1]?.avg
 
-  const hasAvgData = prevMonthsData.some(arr => arr.length > 0)
+  const hasAvgData = seriesWithData.length > 0
   const diffVsAvg = hasAvgData && avgAtToday != null ? currentAtToday - avgAtToday : null
   const diffPct = hasAvgData && avgAtToday ? Math.abs(Math.round((diffVsAvg / avgAtToday) * 100)) : null
 
-  // Previous month totals for avg label
-  const avgMonthNames = [1, 2, 3].map(n => {
-    const p = subtractMonths(month, year, n)
-    return getMonthName(p.month, p.year)
-  })
+  // ── Label & ringkasan sesuai opsi pembanding ───────────────
+  const first = compareMonths[0]
+  const firstName = getMonthName(first.month, first.year)
+  const firstShort = shortMonthName(first.month, first.year)
+  const partial = compareMode === 'avg3' && hasAvgData && seriesWithData.length < 3
+
+  const compare = compareMode === 'avg3' ? {
+    mode: 'avg3',
+    title: 'rata-rata 3 bulan sebelumnya',
+    short: 'rata-rata',
+    tip: 'Rata-rata 3 bln',
+    legend: 'Rata-rata 3 bulan lalu',
+    subtitle: `Dibandingkan rata-rata ${compareMonths.map(m => getMonthName(m.month, m.year)).join(', ')}${partial ? ` (hanya ${seriesWithData.length} bulan yang ada datanya)` : ''}`,
+    empty: 'Perbandingan akan muncul setelah ada data dari 3 bulan sebelumnya.',
+  } : {
+    mode: compareMode,
+    title: firstName,
+    short: firstShort,
+    tip: firstShort,
+    legend: firstName,
+    subtitle: compareMode === 'prev1'
+      ? `Dibandingkan bulan lalu (${firstName}), hari demi hari`
+      : `Dibandingkan ${firstName}, hari demi hari`,
+    empty: `Belum ada pengeluaran tercatat di ${firstName}.`,
+  }
+
+  const avgMonthly = Math.round(
+    seriesWithData.reduce((s, p) => s + p.total, 0) / Math.max(seriesWithData.length, 1)
+  )
+
+  // Baris ringkasan di bawah grafik (selalu 4 sel)
+  let cmpCells = []
+  if (hasAvgData) {
+    if (compareMode === 'avg3') {
+      cmpCells = [
+        ...compareSeries.map(s => ({ label: s.label, value: s.total, tone: 'sub' })),
+        { label: 'Rata-rata/bulan', value: avgMonthly, tone: 'gold' },
+      ]
+    } else {
+      const s = compareSeries[0]
+      const atSame = s.cum[Math.min(lastAvailableDay, s.totalDays)] || 0
+      cmpCells = [
+        { label: `Total ${firstShort}`, value: s.total, tone: 'sub' },
+        { label: `${firstShort} s/d tgl ${lastAvailableDay}`, value: atSame, tone: 'sub' },
+        { label: `Bulan ini s/d tgl ${lastAvailableDay}`, value: currentAtToday, tone: 'gold' },
+        { label: 'Selisih', value: currentAtToday - atSame, tone: 'diff' },
+      ]
+    }
+  }
 
   // Per person
   const personMap = {}
@@ -290,18 +330,15 @@ export default function Reports() {
   const topExpenses = [...transactions].filter(t => t.type === 'expense').sort((a, b) => b.amount - a.amount).slice(0, 5)
 
   async function handleExport(format) {
-    const prevMonths = [0, 1, 2].map(idx => {
-      const p = subtractMonths(month, year, idx + 1)
-      return { label: getMonthName(p.month, p.year), total: prevCumsByDay[idx]?.total || 0 }
-    })
-    const withData = prevCumsByDay.filter(p => p.total > 0)
-    const avgMonthly = Math.round(withData.reduce((s, p) => s + p.total, 0) / Math.max(withData.length, 1))
-
+    if (compareLoading) throw new Error('data pembanding masih dimuat, coba lagi sebentar')
     await exportReport(format, {
       month, year, transactions, profiles,
       totalIncome, totalExpense, pieData, dailyData,
       cumulativeData: cumulativeChartData,
-      hasAvgData, avgMonthNames, prevMonths, avgMonthly,
+      hasAvgData,
+      prevMonths: compareSeries.map(s => ({ label: s.label, total: s.total })),
+      avgMonthly,
+      compare: { ...compare, cells: cmpCells },
       diffVsAvg, diffPct,
       lastDay: lastAvailableDay, currentAtToday, avgAtToday,
       isCurrentMonth, todayDay, daysInMonth,
@@ -438,11 +475,11 @@ export default function Reports() {
           {/* ── Cumulative Comparison Card ── */}
           <div className="card" style={{ padding: '24px 24px 20px' }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, gap: 16, flexWrap: 'wrap' }}>
-              <div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18, gap: 16, flexWrap: 'wrap' }}>
+              <div style={{ minWidth: 0, flex: '1 1 220px' }}>
                 <div className="section-title" style={{ marginBottom: 4 }}>Akumulasi Pengeluaran</div>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
-                  Dibandingkan rata-rata {avgMonthNames.join(', ')}
+                  {compare.subtitle}
                 </p>
               </div>
 
@@ -457,6 +494,8 @@ export default function Reports() {
                   background: diffVsAvg > 0 ? 'rgba(248,113,113,0.1)' : diffVsAvg < 0 ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.05)',
                   border: `1px solid ${diffVsAvg > 0 ? 'rgba(248,113,113,0.25)' : diffVsAvg < 0 ? 'rgba(74,222,128,0.25)' : 'var(--border)'}`,
                   flexShrink: 0,
+                  opacity: compareLoading ? 0.4 : 1,
+                  transition: 'opacity 0.2s ease',
                 }}>
                   {diffVsAvg > 0
                     ? <TrendingUp size={14} color="#f87171" />
@@ -476,13 +515,23 @@ export default function Reports() {
                       ({diffVsAvg > 0 ? '+' : '-'}{diffPct}%)
                     </span>
                   )}
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>vs rata-rata</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>vs {compare.short}</span>
                 </div>
               )}
             </div>
 
+            {/* Pilih pembanding */}
+            <ComparePicker
+              mode={compareMode}
+              onModeChange={setCompareMode}
+              month={month}
+              year={year}
+              customMonth={customEff}
+              onCustomChange={setCustomPick}
+            />
+
             {/* Legend */}
-            <div style={{ display: 'flex', gap: 20, marginBottom: 16, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 20, rowGap: 8, flexWrap: 'wrap', marginBottom: 16, alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <div style={{ width: 24, height: 2.5, borderRadius: 2, background: 'linear-gradient(90deg, #e8960f, #f7c055)' }} />
                 <span style={{ fontSize: 12, color: 'var(--text-sub)', fontWeight: 500 }}>Bulan ini</span>
@@ -492,7 +541,7 @@ export default function Reports() {
                   width: 24, height: 0,
                   borderTop: '2px dashed rgba(255,255,255,0.3)',
                 }} />
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Rata-rata 3 bulan lalu</span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{compare.legend}</span>
               </div>
               {isCurrentMonth && todayDay < daysInMonth && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginLeft: 'auto' }}>
@@ -503,7 +552,7 @@ export default function Reports() {
             </div>
 
             {/* Chart */}
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={220} className={`cmp-chart${compareLoading ? ' is-loading' : ''}`}>
               <ComposedChart data={cumulativeChartData} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
                 <defs>
                   <linearGradient id="currentGrad" x1="0" y1="0" x2="0" y2="1">
@@ -534,7 +583,7 @@ export default function Reports() {
                   width={48}
                 />
 
-                <Tooltip content={<CumulativeTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }} />
+                <Tooltip content={<CumulativeTooltip refLabel={compare.tip} />} cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }} />
 
                 {/* Today reference line */}
                 {isCurrentMonth && todayDay < daysInMonth && (
@@ -546,12 +595,12 @@ export default function Reports() {
                   />
                 )}
 
-                {/* Average line (dashed, subtle) */}
+                {/* Garis pembanding (putus-putus, halus) */}
                 {hasAvgData && (
                   <Line
                     type="monotone"
                     dataKey="avg"
-                    name="Rata-rata 3 bln"
+                    name={compare.tip}
                     stroke="rgba(255,255,255,0.3)"
                     strokeWidth={1.5}
                     strokeDasharray="6 4"
@@ -584,40 +633,32 @@ export default function Reports() {
               </ComposedChart>
             </ResponsiveContainer>
 
-            {/* Bottom context row — responsive 2×2 on mobile */}
+            {/* Baris konteks di bawah grafik — 2×2 di mobile */}
             {hasAvgData && (
-              <div className="report-month-stats">
-                {[0, 1, 2].map(idx => {
-                  const p = subtractMonths(month, year, idx + 1)
-                  const total = prevCumsByDay[idx]?.total || 0
+              <div className="report-month-stats" style={{ opacity: compareLoading ? 0.4 : 1, transition: 'opacity 0.2s ease' }}>
+                {cmpCells.map((c, i) => {
+                  const color = c.tone === 'gold'
+                    ? 'var(--accent)'
+                    : c.tone === 'diff'
+                      ? (c.value > 0 ? 'var(--red)' : c.value < 0 ? 'var(--green)' : 'var(--text-sub)')
+                      : 'var(--text-sub)'
                   return (
-                    <div key={idx} className="report-month-stat-item">
+                    <div key={c.label} className={`report-month-stat-item${i === cmpCells.length - 1 ? ' report-month-stat-avg' : ''}`}>
                       <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: 5 }}>
-                        {getMonthName(p.month, p.year)}
+                        {c.label}
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: '-0.01em' }}>
-                        {formatRupiah(total)}
+                      <div style={{ fontSize: 14, fontWeight: 700, color, letterSpacing: '-0.01em' }}>
+                        {c.tone === 'diff' && c.value > 0 ? '+' : ''}{formatRupiah(c.value)}
                       </div>
                     </div>
                   )
                 })}
-                <div className="report-month-stat-item report-month-stat-avg">
-                  <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: 5 }}>
-                    Rata-rata/bulan
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', letterSpacing: '-0.01em' }}>
-                    {formatRupiah(Math.round(
-                      prevCumsByDay.filter(p => p.total > 0).reduce((s, p) => s + p.total, 0) /
-                      Math.max(prevCumsByDay.filter(p => p.total > 0).length, 1)
-                    ))}
-                  </div>
-                </div>
               </div>
             )}
 
-            {!hasAvgData && (
+            {!hasAvgData && !compareLoading && (
               <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--bg-card2)', borderRadius: 10, fontSize: 12, color: 'var(--text-muted)', display:'flex', alignItems:'center', gap:8 }}>
-                <Info size={13} style={{flexShrink:0, color:'var(--accent)'}} /> Perbandingan akan muncul setelah ada data dari 3 bulan sebelumnya.
+                <Info size={13} style={{flexShrink:0, color:'var(--accent)'}} /> {compare.empty}
               </div>
             )}
           </div>
@@ -627,7 +668,7 @@ export default function Reports() {
             <div className="card">
               <div className="section-title">Kontribusi per Orang</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
-                {personData.map((p, i) => (
+                {personData.map(p => (
                   <div key={p.name} style={{ padding: '14px 16px', background: 'var(--bg-card2)', borderRadius: 12 }}>
                     <div style={{ fontWeight: 500, marginBottom: 8, color: 'var(--text)' }}>{p.name}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
