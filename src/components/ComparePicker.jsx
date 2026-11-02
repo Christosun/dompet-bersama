@@ -70,41 +70,45 @@ export default function ComparePicker({ mode, onModeChange, month, year, customM
       {mode === 'custom' && (
         <div className="cmp-custom">
           <label className="cmp-custom-label" htmlFor="cmp-month">Bandingkan dengan</label>
-          <button
-            type="button"
-            className="month-nav-btn"
-            aria-label="Bulan yang lebih lama"
-            disabled={idx < 0 || idx >= options.length - 1}
-            onClick={() => step(idx + 1)}
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <select
-            id="cmp-month"
-            className="form-input"
-            value={keyOf(customMonth)}
-            onChange={e => {
-              const [y, m] = e.target.value.split('-').map(Number)
-              onCustomChange({ month: m, year: y })
-            }}
-          >
-            {years.map(y => (
-              <optgroup key={y} label={String(y)}>
-                {options.filter(o => o.year === y).map(o => (
-                  <option key={keyOf(o)} value={keyOf(o)}>{getMonthName(o.month, o.year)}</option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-          <button
-            type="button"
-            className="month-nav-btn"
-            aria-label="Bulan yang lebih baru"
-            disabled={idx <= 0}
-            onClick={() => step(idx - 1)}
-          >
-            <ChevronRight size={16} />
-          </button>
+          <div className="cmp-custom-ctrl">
+            <button
+              type="button"
+              className="cmp-step"
+              aria-label="Bulan yang lebih lama"
+              disabled={idx < 0 || idx >= options.length - 1}
+              onClick={() => step(idx + 1)}
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            <select
+              id="cmp-month"
+              className="cmp-select"
+              value={keyOf(customMonth)}
+              onChange={e => {
+                const [y, m] = e.target.value.split('-').map(Number)
+                onCustomChange({ month: m, year: y })
+              }}
+            >
+              {years.map(y => (
+                <optgroup key={y} label={String(y)}>
+                  {options.filter(o => o.year === y).map(o => (
+                    <option key={keyOf(o)} value={keyOf(o)}>{getMonthName(o.month, o.year)}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              className="cmp-step"
+              aria-label="Bulan yang lebih baru"
+              disabled={idx <= 0}
+              onClick={() => step(idx - 1)}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       )}
     </div>

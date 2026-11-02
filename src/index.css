@@ -315,6 +315,23 @@ input[type="time"].form-input,
 input[type="month"].form-input {
   height: 48px;
 }
+/* Grid filter: kolom selalu sama lebar */
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+.filter-grid > * { min-width: 0; }
+.filter-grid .form-input { min-width: 0; }
+.filter-reset { grid-column: 1 / -1; justify-self: end; }
+
+@media (max-width: 768px) {
+  .filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
 
 /* ══════════════════════════════
    MODAL
@@ -350,10 +367,6 @@ input[type="month"].form-input {
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-@keyframes heatTipIn {
-  from { opacity: 0; transform: translateY(3px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
 
 /* ══════════════════════════════
    BADGES
@@ -1209,4 +1222,9 @@ body:has(.auth-page)::after {
     background: rgba(255,255,255,0.14); margin: 4px auto 8px;
   }
   .export-option { padding: 14px 12px; }
+}
+
+/* Kartu grafik berdampingan jadi satu kolom di layar menengah */
+@media (min-width: 769px) and (max-width: 1180px) {
+  .grid-2.stack-md { grid-template-columns: 1fr; }
 }

@@ -6,14 +6,12 @@ import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus, PieChart as
 import { CategoryIcon } from '../components/CategoryIcon'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell,
   Line, CartesianGrid, ReferenceLine, Area, ComposedChart
 } from 'recharts'
+import CategoryDonut from '../components/CategoryDonut'
 import ExportMenu from '../components/ExportMenu'
 import ComparePicker from '../components/ComparePicker'
 import { exportReport } from '../lib/exportReport'
-
-const PIE_COLORS = ['#f5a623','#4ade80','#60a5fa','#f472b6','#a78bfa','#34d399','#f87171','#06b6d4','#fbbf24','#e879f9']
 
 const TOOLTIP_STYLE = {
   background: '#1a1d24',
@@ -392,9 +390,9 @@ export default function Reports() {
           </div>
 
           {/* Daily bar + pie */}
-          <div className="grid-2">
+          <div className="grid-2 stack-md">
             <div className="card">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', minHeight: 36, marginBottom: 14 }}>
                 <div className="section-title" style={{ margin: 0 }}>Aktivitas Harian</div>
                 <div className="type-toggle" style={{ minWidth: 0 }}>
                   <button
@@ -423,7 +421,7 @@ export default function Reports() {
                 </div>
               </div>
 
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={232}>
                 <BarChart data={dailyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} interval={4} />
                   <YAxis tick={{ fontSize: 9, fill: 'var(--text-muted)' }} tickFormatter={v => v >= 1000000 ? `${v/1000000}jt` : `${v/1000}rb`} />
@@ -447,28 +445,20 @@ export default function Reports() {
             </div>
 
             <div className="card">
-              <div className="section-title">Komposisi Pengeluaran</div>
+              <div style={{ display: 'flex', alignItems: 'center', minHeight: 36, marginBottom: 14 }}>
+                <div className="section-title" style={{ margin: 0 }}>Komposisi Pengeluaran</div>
+              </div>
+
+              <div style={{ minHeight: 232, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {pieData.length === 0 ? (
-                <div className="empty-state" style={{ padding: 20 }}><div className="icon"><PieChartIcon size={36} strokeWidth={1.2} /></div><p>Belum ada pengeluaran</p></div>
-              ) : (
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <PieChart width={150} height={150}>
-                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" strokeWidth={0}>
-                      {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip formatter={v => formatRupiah(v)} contentStyle={TOOLTIP_STYLE} itemStyle={{ color: '#f5f0e8' }} labelStyle={{ color: '#f7c055', fontWeight: 600 }} />
-                  </PieChart>
-                  <div style={{ flex: 1 }}>
-                    {pieData.slice(0, 7).map((d, i) => (
-                      <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-                        <div className="cat-dot" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                        <span style={{ fontSize: 11, color: 'var(--text-sub)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
-                        <span style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>{Math.round(d.value / totalExpense * 100)}%</span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="empty-state" style={{ padding: 0 }}>
+                  <div className="icon"><PieChartIcon size={36} strokeWidth={1.2} /></div>
+                  <p>Belum ada pengeluaran</p>
                 </div>
+              ) : (
+                <CategoryDonut data={pieData} maxItems={6} />
               )}
+              </div>
             </div>
           </div>
 

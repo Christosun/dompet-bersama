@@ -8,7 +8,8 @@ import { CategoryIcon } from '../components/CategoryIcon'
 import TransactionModal from '../components/TransactionModal'
 import CalendarHeatmap from '../components/CalendarHeatmap'
 import { SkeletonStatGrid, SkeletonTransactionList } from '../components/Skeleton'
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from 'recharts'
+import { Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from 'recharts'
+import CategoryDonut from '../components/CategoryDonut'
 
 const TOOLTIP_STYLE = {
   background: '#1a1d24',
@@ -17,8 +18,6 @@ const TOOLTIP_STYLE = {
   color: '#f5f0e8',
   fontSize: 12,
 }
-
-const PIE_COLORS = ['#f5a623', '#4ade80', '#60a5fa', '#f472b6', '#a78bfa', '#34d399']
 
 function formatDateHeader(dateStr) {
   const date = new Date(dateStr + 'T00:00:00')
@@ -225,7 +224,7 @@ export default function Dashboard() {
     const key = t.categories?.name || 'Lainnya'
     categoryMap[key] = (categoryMap[key] || 0) + Number(t.amount)
   })
-  const pieData = Object.entries(categoryMap).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 6)
+  const pieData = Object.entries(categoryMap).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
 
   const dailyMap = {}
   transactions.forEach(t => {
@@ -297,11 +296,11 @@ export default function Dashboard() {
       <div className="grid-2" style={{ marginBottom: 24 }}>
         <div className="card">
           <div className="section-title">Tren Harian</div>
-          {loading ? <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" style={{ margin: 0 }} /></div> :
+          {loading ? <div style={{ height: 232, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" style={{ margin: 0 }} /></div> :
             dailyData.length === 0 ? (
               <div className="empty-state" style={{ padding: '30px 0' }}><div className="icon"><BarChart2 size={36} strokeWidth={1.2} /></div><p>Belum ada data</p></div>
             ) : (
-              <ResponsiveContainer width="100%" height={180}>
+              <ResponsiveContainer width="100%" height={232}>
                 <BarChart data={dailyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
                   <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickFormatter={v => v >= 1000000 ? `${v / 1000000}jt` : `${v / 1000}rb`} />
@@ -316,29 +315,18 @@ export default function Dashboard() {
 
         <div className="card">
           <div className="section-title">Pengeluaran per Kategori</div>
-          {loading ? <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" style={{ margin: 0 }} /></div> :
-            pieData.length === 0 ? (
-              <div className="empty-state" style={{ padding: '30px 0' }}><div className="icon"><PieChartIcon size={36} strokeWidth={1.2} /></div><p>Belum ada pengeluaran</p></div>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <PieChart width={140} height={140}>
-                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={38} outerRadius={60} dataKey="value" strokeWidth={0}>
-                    {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip formatter={v => formatRupiah(v)} contentStyle={TOOLTIP_STYLE} itemStyle={{ color: '#f5f0e8' }} labelStyle={{ color: '#f7c055', fontWeight: 600 }} />
-                </PieChart>
-                <div style={{ flex: 1 }}>
-                  {pieData.map((d, i) => (
-                    <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                      <div className="cat-dot" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                      <span style={{ fontSize: 12, color: 'var(--text-sub)', flex: 1 }}>{d.name}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatRupiah(d.value)}</span>
-                    </div>
-                  ))}
+          <div style={{ minHeight: 232, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {loading ? <div className="spinner" style={{ margin: 0 }} /> :
+              pieData.length === 0 ? (
+                <div className="empty-state" style={{ padding: 0 }}>
+                  <div className="icon"><PieChartIcon size={36} strokeWidth={1.2} /></div>
+                  <p>Belum ada pengeluaran</p>
                 </div>
-              </div>
-            )
-          }
+              ) : (
+                <CategoryDonut data={pieData} maxItems={6} />
+              )
+            }
+          </div>
         </div>
       </div>
 

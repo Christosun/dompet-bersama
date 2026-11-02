@@ -187,7 +187,7 @@ export default function Transactions() {
 
       {/* Filters */}
       <div className="card" style={{ marginBottom: 16, padding: 16 }}>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div className="filter-grid">
           <div style={{ flex: '1 1 140px' }}>
             <div className="form-label" style={{ marginBottom: 6 }}>Jenis</div>
             <select className="form-input" value={filterType} onChange={e => setFilterType(e.target.value)}>
@@ -222,10 +222,10 @@ export default function Transactions() {
             <div className="form-label" style={{ marginBottom: 6 }}>Cari</div>
             <div style={{ position: 'relative' }}>
               <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input type="text" className="form-input" placeholder="Catatan/kategori..." value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 32 }} />
+              <input type="text" className="form-input" placeholder="Catatan/kategori" value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 32 }} />
             </div>
           </div>
-          {hasFilter && <button className="btn btn-ghost btn-sm" onClick={clearFilters} style={{ alignSelf: 'flex-end' }}>Reset</button>}
+          {hasFilter && <button className="btn btn-ghost btn-sm filter-reset" onClick={clearFilters}>Reset</button>}
         </div>
       </div>
 
