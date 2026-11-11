@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
-import { X, ArrowDownLeft, ArrowUpRight } from 'lucide-react'
+import { X, ArrowDownLeft, ArrowUpRight, Wallet, Tag, FileText } from 'lucide-react'
 
 export default function TransactionModal({ onClose, onSaved, editData }) {
   const { user } = useAuth()
@@ -90,26 +90,32 @@ export default function TransactionModal({ onClose, onSaved, editData }) {
 
           <div className="form-group">
             <label className="form-label">Jumlah (Rp)</label>
-            <input
-              className="form-input"
-              type="text"
-              inputMode="numeric"
-              placeholder="0"
-              value={displayAmount}
-              onChange={handleAmountInput}
-              required
-              style={{ fontSize: 20, fontFamily: 'var(--font-display)' }}
-            />
+            <div className="has-ico">
+              <input
+                className="form-input"
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={displayAmount}
+                onChange={handleAmountInput}
+                required
+                style={{ fontSize: 20, fontFamily: 'var(--font-display)' }}
+              />
+              <Wallet size={17} className="field-ico" />
+            </div>
           </div>
 
           <div className="form-group">
             <label className="form-label">Kategori</label>
-            <select className="form-input" value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
-              <option value="">Pilih kategori</option>
-              {categories.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+            <div className="has-ico">
+              <select className="form-input" value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
+                <option value="">Pilih kategori</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <Tag size={17} className="field-ico" />
+            </div>
           </div>
 
           <div className="form-group">
@@ -119,7 +125,10 @@ export default function TransactionModal({ onClose, onSaved, editData }) {
 
           <div className="form-group">
             <label className="form-label">Catatan (opsional)</label>
-            <input className="form-input" type="text" placeholder="Cth: Makan siang di warung" value={note} onChange={e => setNote(e.target.value)} />
+            <div className="has-ico">
+              <input className="form-input" type="text" placeholder="Cth: Makan siang di warung" value={note} onChange={e => setNote(e.target.value)} />
+              <FileText size={17} className="field-ico" />
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>

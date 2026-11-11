@@ -5,7 +5,7 @@ import { useToast } from '../contexts/ToastContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
 import Avatar from '../components/Avatar'
-import { PlusCircle, Search, Trash2, Pencil, ChevronLeft, ChevronRight, SearchX } from 'lucide-react'
+import { PlusCircle, Search, Trash2, Pencil, ChevronLeft, ChevronRight, ChevronDown, SlidersHorizontal, SearchX } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
 import TransactionModal from '../components/TransactionModal'
 import { SkeletonTransactionList } from '../components/Skeleton'
@@ -44,6 +44,7 @@ export default function Transactions() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [search, setSearch] = useState('')
+  const [showFilters, setShowFilters] = useState(() => window.innerWidth > 768)
 
   const realtimeRef = useRef(null)
   const loadAllRef = useRef(null)
@@ -165,7 +166,8 @@ export default function Transactions() {
     setDateFrom(''); setDateTo(''); setSearch('')
   }
 
-  const hasFilter = filterType !== 'all' || filterCat !== 'all' || filterUser !== 'all' || dateFrom || dateTo || search
+  const activeCount = [filterType !== 'all', filterCat !== 'all', filterUser !== 'all', dateFrom, dateTo, search].filter(Boolean).length
+  const hasFilter = activeCount > 0
 
   return (
     <div>
@@ -179,53 +181,67 @@ export default function Transactions() {
         </button>
       </div>
 
-      <div className="month-nav" style={{ marginBottom: 20 }}>
+      <div className="month-nav" style={{ marginBottom: 24 }}>
         <button className="month-nav-btn" onClick={prevMonth}><ChevronLeft size={16} /></button>
         <span className="month-name">{getMonthName(month, year)}</span>
         <button className="month-nav-btn" onClick={nextMonth}><ChevronRight size={16} /></button>
       </div>
 
       {/* Filters */}
-      <div className="card" style={{ marginBottom: 16, padding: 16 }}>
-        <div className="filter-grid">
-          <div style={{ flex: '1 1 140px' }}>
-            <div className="form-label" style={{ marginBottom: 6 }}>Jenis</div>
-            <select className="form-input" value={filterType} onChange={e => setFilterType(e.target.value)}>
-              <option value="all">Semua</option>
-              <option value="expense">Pengeluaran</option>
-              <option value="income">Pemasukan</option>
-            </select>
-          </div>
-          <div style={{ flex: '1 1 160px' }}>
-            <div className="form-label" style={{ marginBottom: 6 }}>Kategori</div>
-            <select className="form-input" value={filterCat} onChange={e => setFilterCat(e.target.value)}>
-              <option value="all">Semua Kategori</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
-          <div style={{ flex: '1 1 140px' }}>
-            <div className="form-label" style={{ marginBottom: 6 }}>Dicatat oleh</div>
-            <select className="form-input" value={filterUser} onChange={e => setFilterUser(e.target.value)}>
-              <option value="all">Semua</option>
-              {Object.values(profiles).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
-          <div style={{ flex: '1 1 130px' }}>
-            <div className="form-label" style={{ marginBottom: 6 }}>Dari</div>
-            <input type="date" className="form-input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-          </div>
-          <div style={{ flex: '1 1 130px' }}>
-            <div className="form-label" style={{ marginBottom: 6 }}>Sampai</div>
-            <input type="date" className="form-input" value={dateTo} onChange={e => setDateTo(e.target.value)} />
-          </div>
-          <div style={{ flex: '1 1 180px' }}>
-            <div className="form-label" style={{ marginBottom: 6 }}>Cari</div>
-            <div style={{ position: 'relative' }}>
-              <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input type="text" className="form-input" placeholder="Catatan/kategori" value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 32 }} />
+      <div className="card filter-card" style={{ marginBottom: 16 }}>
+        <div className="filter-head">
+          <button type="button" className="filter-toggle" aria-expanded={showFilters} aria-controls="tx-filters"
+            onClick={() => setShowFilters(v => !v)}>
+            <SlidersHorizontal size={15} className="filter-ico" />
+            <span>Filter</span>
+            {activeCount > 0 && <span className="filter-badge">{activeCount}</span>}
+            <ChevronDown size={15} className="filter-chev" />
+          </button>
+          {hasFilter && <button type="button" className="btn btn-ghost btn-sm" onClick={clearFilters}>Reset</button>}
+        </div>
+
+        <div id="tx-filters" className={`filter-collapse${showFilters ? '' : ' closed'}`}>
+          <div className="filter-inner">
+            <div className="filter-grid">
+              <div className="filter-jenis">
+                <div className="form-label" style={{ marginBottom: 6 }}>Jenis</div>
+                <select className="form-input" value={filterType} onChange={e => setFilterType(e.target.value)}>
+                  <option value="all">Semua</option>
+                  <option value="expense">Pengeluaran</option>
+                  <option value="income">Pemasukan</option>
+                </select>
+              </div>
+              <div className="filter-kategori">
+                <div className="form-label" style={{ marginBottom: 6 }}>Kategori</div>
+                <select className="form-input" value={filterCat} onChange={e => setFilterCat(e.target.value)}>
+                  <option value="all">Semua Kategori</option>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div className="filter-oleh">
+                <div className="form-label" style={{ marginBottom: 6 }}>Dicatat oleh</div>
+                <select className="form-input" value={filterUser} onChange={e => setFilterUser(e.target.value)}>
+                  <option value="all">Semua</option>
+                  {Object.values(profiles).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <div className="filter-dari">
+                <div className="form-label" style={{ marginBottom: 6 }}>Dari</div>
+                <input type="date" className="form-input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+              </div>
+              <div className="filter-sampai">
+                <div className="form-label" style={{ marginBottom: 6 }}>Sampai</div>
+                <input type="date" className="form-input" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+              </div>
+              <div className="filter-cari">
+                <div className="form-label" style={{ marginBottom: 6 }}>Cari</div>
+                <div className="search-wrap">
+                  <input type="text" className="form-input" aria-label="Cari catatan atau kategori" value={search} onChange={e => setSearch(e.target.value)} />
+                  <Search size={16} className="search-ico" />
+                </div>
+              </div>
             </div>
           </div>
-          {hasFilter && <button className="btn btn-ghost btn-sm filter-reset" onClick={clearFilters}>Reset</button>}
         </div>
       </div>
 

@@ -367,10 +367,10 @@ export default function Reports() {
       </div>
 
       {loading ? <div className="spinner" /> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
           {/* Summary row */}
-          <div className="stat-grid">
+          <div className="stat-grid" style={{ marginBottom: 0 }}>
             <div className="stat-card">
               <div className="stat-label">Pemasukan</div>
               <div className="stat-value green">{formatRupiah(totalIncome)}</div>

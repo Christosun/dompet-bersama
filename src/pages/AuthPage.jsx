@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { User, Mail, Lock } from 'lucide-react'
 
 const currentYear = new Date().getFullYear()
 
@@ -146,40 +147,49 @@ export default function AuthPage() {
             {tab === 'register' && (
               <div className="form-group">
                 <label className="form-label">Nama Lengkap</label>
-                <input
-                  className="form-input"
-                  type="text"
-                  placeholder="Cth: Eto atau Noni"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  required
-                  autoComplete="name"
-                />
+                <div className="has-ico">
+                  <input
+                    className="form-input"
+                    type="text"
+                    placeholder="Cth: Eto atau Noni"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    required
+                    autoComplete="name"
+                  />
+                  <User size={17} className="field-ico" />
+                </div>
               </div>
             )}
             <div className="form-group">
               <label className="form-label">Email</label>
-              <input
-                className="form-input"
-                type="email"
-                placeholder="email@contoh.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                autoComplete={tab === 'login' ? 'email' : 'new-email'}
-              />
+              <div className="has-ico">
+                <input
+                  className="form-input"
+                  type="email"
+                  placeholder="email@contoh.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  autoComplete={tab === 'login' ? 'email' : 'new-email'}
+                />
+                <Mail size={17} className="field-ico" />
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label">Password</label>
-              <input
-                className="form-input"
-                type="password"
-                placeholder="Minimal 6 karakter"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
-              />
+              <div className="has-ico">
+                <input
+                  className="form-input"
+                  type="password"
+                  placeholder="Minimal 6 karakter"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
+                />
+                <Lock size={17} className="field-ico" />
+              </div>
             </div>
             <button
               className="btn btn-primary"

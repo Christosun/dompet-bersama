@@ -5,7 +5,7 @@ import { useToast } from '../contexts/ToastContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { formatRupiah } from '../lib/utils'
 import Avatar from '../components/Avatar'
-import { PlusCircle, X, Pencil, RefreshCw, Pause, Play } from 'lucide-react'
+import { PlusCircle, X, Pencil, RefreshCw, Pause, Play, Wallet, Tag, Repeat, FileText } from 'lucide-react'
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
 
@@ -93,24 +93,33 @@ function RecurringModal({ data, categories, onClose, onSaved }) {
           </div>
           <div className="form-group">
             <label className="form-label">Jumlah (Rp)</label>
-            <input className="form-input" type="text" inputMode="numeric" placeholder="0" value={fmt(amount)}
-              onChange={e => setAmount(e.target.value.replace(/\D/g, ''))} required
-              style={{ fontSize: 20, fontFamily: 'var(--font-display)' }} />
+            <div className="has-ico">
+              <input className="form-input" type="text" inputMode="numeric" placeholder="0" value={fmt(amount)}
+                onChange={e => setAmount(e.target.value.replace(/\D/g, ''))} required
+                style={{ fontSize: 20, fontFamily: 'var(--font-display)' }} />
+              <Wallet size={17} className="field-ico" />
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label">Kategori</label>
-            <select className="form-input" value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
-              <option value="">Pilih kategori</option>
-              {filteredCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <div className="has-ico">
+              <select className="form-input" value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
+                <option value="">Pilih kategori</option>
+                {filteredCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <Tag size={17} className="field-ico" />
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label">Frekuensi</label>
-            <select className="form-input" value={frequency} onChange={e => setFrequency(e.target.value)}>
-              <option value="daily">Setiap Hari</option>
-              <option value="weekly">Setiap Minggu</option>
-              <option value="monthly">Setiap Bulan</option>
-            </select>
+            <div className="has-ico">
+              <select className="form-input" value={frequency} onChange={e => setFrequency(e.target.value)}>
+                <option value="daily">Setiap Hari</option>
+                <option value="weekly">Setiap Minggu</option>
+                <option value="monthly">Setiap Bulan</option>
+              </select>
+              <Repeat size={17} className="field-ico" />
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label">Mulai Dari</label>
@@ -118,7 +127,10 @@ function RecurringModal({ data, categories, onClose, onSaved }) {
           </div>
           <div className="form-group">
             <label className="form-label">Catatan (opsional)</label>
-            <input className="form-input" type="text" placeholder="Cth: Cicilan, langganan" value={note} onChange={e => setNote(e.target.value)} />
+            <div className="has-ico">
+              <input className="form-input" type="text" placeholder="Cth: Cicilan, langganan" value={note} onChange={e => setNote(e.target.value)} />
+              <FileText size={17} className="field-ico" />
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" className="btn btn-ghost" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>Batal</button>

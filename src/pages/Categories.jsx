@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useConfirm } from '../contexts/ConfirmContext'
-import { PlusCircle, Pencil, Trash2, X, ArrowDownLeft, ArrowUpRight, Layers } from 'lucide-react'
+import { PlusCircle, Pencil, Trash2, X, ArrowDownLeft, ArrowUpRight, Layers, Tag } from 'lucide-react'
 import { CategoryIcon, CATEGORY_ICON_MAP, CATEGORY_ICON_LIST, migrateIconName } from '../components/CategoryIcon'
 import { SkeletonCategoryList } from '../components/Skeleton'
 
@@ -48,7 +48,10 @@ function CategoryModal({ data, onClose, onSaved }) {
         <form onSubmit={handleSave}>
           <div className="form-group">
             <label className="form-label">Nama Kategori</label>
-            <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="Nama kategori" required />
+            <div className="has-ico">
+              <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="Nama kategori" required />
+              <Tag size={17} className="field-ico" />
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label">Jenis</label>

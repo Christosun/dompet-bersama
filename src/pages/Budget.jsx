@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
-import { ChevronLeft, ChevronRight, PlusCircle, X, Pencil, Copy, Target, AlertTriangle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, PlusCircle, X, Pencil, Copy, Target, AlertTriangle, Tag, Wallet } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
 import { SkeletonBudgetList, SkeletonStatGrid } from '../components/Skeleton'
 
@@ -47,18 +47,24 @@ function BudgetModal({ data, categories, month, year, onClose, onSaved }) {
         <form onSubmit={handleSave}>
           <div className="form-group">
             <label className="form-label">Kategori Pengeluaran</label>
-            <select className="form-input" value={categoryId} onChange={e => setCategoryId(e.target.value)} required disabled={!!data}>
-              <option value="">Pilih kategori</option>
-              {categories.filter(c => c.type === 'expense' || c.type === 'both').map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+            <div className="has-ico">
+              <select className="form-input" value={categoryId} onChange={e => setCategoryId(e.target.value)} required disabled={!!data}>
+                <option value="">Pilih kategori</option>
+                {categories.filter(c => c.type === 'expense' || c.type === 'both').map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <Tag size={17} className="field-ico" />
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label">Budget Bulan {getMonthName(month, year)} (Rp)</label>
-            <input className="form-input" type="text" inputMode="numeric" value={displayAmount}
-              onChange={e => setAmount(e.target.value.replace(/\D/g, ''))} placeholder="0" required
-              style={{ fontSize: 18, fontFamily: 'var(--font-display)' }} />
+            <div className="has-ico">
+              <input className="form-input" type="text" inputMode="numeric" value={displayAmount}
+                onChange={e => setAmount(e.target.value.replace(/\D/g, ''))} placeholder="0" required
+                style={{ fontSize: 18, fontFamily: 'var(--font-display)' }} />
+              <Wallet size={17} className="field-ico" />
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" className="btn btn-ghost" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>Batal</button>

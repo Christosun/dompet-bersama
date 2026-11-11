@@ -9,6 +9,7 @@ import {
   PlusCircle, X, Pencil, Trophy, CheckCircle, Plus,
   Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight,
   Calendar, BarChart2, Target, AlertCircle, Clock, Layers, Landmark,
+  PiggyBank, FileText,
 } from 'lucide-react'
 
 /* ─── SQL Setup ──────────────────────────────────────────── */
@@ -120,17 +121,26 @@ function GoalModal({ data, onClose, onSaved }) {
         <form onSubmit={handleSave}>
           <div className="form-group">
             <label className="form-label">Nama Goal</label>
-            <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="Cth: Dana darurat, liburan" required />
+            <div className="has-ico">
+              <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="Cth: Dana darurat, liburan" required />
+              <Trophy size={17} className="field-ico" />
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label">Target (Rp)</label>
-            <input className="form-input" type="text" inputMode="numeric" value={fmt(target)}
-              onChange={e => setTarget(e.target.value.replace(/\D/g, ''))} placeholder="0" required style={{ fontSize: 18, fontWeight: 700 }} />
+            <div className="has-ico">
+              <input className="form-input" type="text" inputMode="numeric" value={fmt(target)}
+                onChange={e => setTarget(e.target.value.replace(/\D/g, ''))} placeholder="0" required style={{ fontSize: 18, fontWeight: 700 }} />
+              <Target size={17} className="field-ico" />
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label">Sudah Terkumpul (Rp)</label>
-            <input className="form-input" type="text" inputMode="numeric" value={fmt(current)}
-              onChange={e => setCurrent(e.target.value.replace(/\D/g, ''))} placeholder="0" style={{ fontSize: 18, fontWeight: 700 }} />
+            <div className="has-ico">
+              <input className="form-input" type="text" inputMode="numeric" value={fmt(current)}
+                onChange={e => setCurrent(e.target.value.replace(/\D/g, ''))} placeholder="0" style={{ fontSize: 18, fontWeight: 700 }} />
+              <PiggyBank size={17} className="field-ico" />
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label">Deadline (opsional)</label>
@@ -204,8 +214,11 @@ function ContributeModal({ goal, savingsId, savingsBalance, onClose, onSaved }) 
         <form onSubmit={handleSave}>
           <div className="form-group">
             <label className="form-label">Jumlah (Rp)</label>
-            <input className="form-input" type="text" inputMode="numeric" value={fmt(amount)}
-              onChange={e => setAmount(e.target.value.replace(/\D/g, ''))} placeholder="0" required autoFocus style={{ fontSize: 22, fontWeight: 700 }} />
+            <div className="has-ico">
+              <input className="form-input" type="text" inputMode="numeric" value={fmt(amount)}
+                onChange={e => setAmount(e.target.value.replace(/\D/g, ''))} placeholder="0" required autoFocus style={{ fontSize: 22, fontWeight: 700 }} />
+              <PiggyBank size={17} className="field-ico" />
+            </div>
           </div>
           {savingsBalance > 0 && (
             <div style={{ marginBottom: 18, padding: '12px 14px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10 }}>
@@ -254,8 +267,11 @@ function InitBalanceModal({ currentInitial, onClose, onSaved }) {
         <form onSubmit={handleSave}>
           <div className="form-group">
             <label className="form-label">Saldo Awal (Rp)</label>
-            <input className="form-input" type="text" inputMode="numeric" value={fmt(amount)}
-              onChange={e => setAmount(e.target.value.replace(/\D/g, ''))} placeholder="0" autoFocus style={{ fontSize: 22, fontWeight: 700 }} />
+            <div className="has-ico">
+              <input className="form-input" type="text" inputMode="numeric" value={fmt(amount)}
+                onChange={e => setAmount(e.target.value.replace(/\D/g, ''))} placeholder="0" autoFocus style={{ fontSize: 22, fontWeight: 700 }} />
+              <Wallet size={17} className="field-ico" />
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" className="btn btn-ghost" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>Batal</button>
@@ -301,8 +317,11 @@ function AdjustModal({ appBalance, onClose, onConfirm }) {
         <form onSubmit={handleSave}>
           <div className="form-group">
             <label className="form-label">Saldo Aktual di Bank (Rp)</label>
-            <input className="form-input" type="text" inputMode="numeric" value={fmt(actual)}
-              onChange={e => setActual(e.target.value.replace(/\D/g, ''))} placeholder="0" required autoFocus style={{ fontSize: 22, fontWeight: 700 }} />
+            <div className="has-ico">
+              <input className="form-input" type="text" inputMode="numeric" value={fmt(actual)}
+                onChange={e => setActual(e.target.value.replace(/\D/g, ''))} placeholder="0" required autoFocus style={{ fontSize: 22, fontWeight: 700 }} />
+              <Landmark size={17} className="field-ico" />
+            </div>
           </div>
           {diff !== null && (
             <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 10, fontSize: 13, display: 'flex', justifyContent: 'space-between',
@@ -314,7 +333,10 @@ function AdjustModal({ appBalance, onClose, onConfirm }) {
           )}
           <div className="form-group">
             <label className="form-label">Catatan penyebab (opsional)</label>
-            <input className="form-input" value={note} onChange={e => setNote(e.target.value)} placeholder="Cth: Bunga bank, biaya admin, lupa catat" />
+            <div className="has-ico">
+              <input className="form-input" value={note} onChange={e => setNote(e.target.value)} placeholder="Cth: Biaya admin, lupa catat" />
+              <FileText size={17} className="field-ico" />
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" className="btn btn-ghost" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>Batal</button>
