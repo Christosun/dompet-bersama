@@ -3,11 +3,13 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useConfirm } from '../contexts/ConfirmContext'
-import { formatRupiah } from '../lib/utils'
 import Avatar from '../components/Avatar'
 import { PlusCircle, X, Pencil, RefreshCw, Pause, Play, Wallet, Tag, Repeat, FileText } from 'lucide-react'
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
+import Select from '../components/Select'
+import DatePicker from '../components/DatePicker'
+import { formatRupiah, todayStr } from '../lib/utils'
 
 const SETUP_SQL = `-- Jalankan di Supabase Dashboard → SQL Editor
 create table if not exists recurring_transactions (
@@ -39,7 +41,7 @@ function RecurringModal({ data, categories, onClose, onSaved }) {
   const [categoryId, setCategoryId] = useState(data?.category_id || '')
   const [note, setNote] = useState(data?.note || '')
   const [frequency, setFrequency] = useState(data?.frequency || 'monthly')
-  const [startDate, setStartDate] = useState(data?.start_date || new Date().toISOString().split('T')[0])
+  const [startDate, setStartDate] = useState(data?.start_date || todayStr())
   const [loading, setLoading] = useState(false)
 
   const filteredCats = categories.filter(c => c.type === type || c.type === 'both')
@@ -102,28 +104,29 @@ function RecurringModal({ data, categories, onClose, onSaved }) {
           </div>
           <div className="form-group">
             <label className="form-label">Kategori</label>
-            <div className="has-ico">
-              <select className="form-input" value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
-                <option value="">Pilih kategori</option>
-                {filteredCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <Tag size={17} className="field-ico" />
-            </div>
+            <Select
+              value={categoryId} onChange={setCategoryId} leftIcon={Tag}
+              placeholder="Pilih kategori" title="Pilih Kategori" required
+              options={filteredCats.map(c => ({
+                value: c.id, label: c.name,
+                icon: <CategoryIcon icon={c.icon} size={15} color={c.color} />,
+              }))}
+            />
           </div>
           <div className="form-group">
             <label className="form-label">Frekuensi</label>
-            <div className="has-ico">
-              <select className="form-input" value={frequency} onChange={e => setFrequency(e.target.value)}>
-                <option value="daily">Setiap Hari</option>
-                <option value="weekly">Setiap Minggu</option>
-                <option value="monthly">Setiap Bulan</option>
-              </select>
-              <Repeat size={17} className="field-ico" />
-            </div>
+            <Select
+              value={frequency} onChange={setFrequency} leftIcon={Repeat} title="Frekuensi"
+              options={[
+                { value: 'daily', label: 'Setiap Hari' },
+                { value: 'weekly', label: 'Setiap Minggu' },
+                { value: 'monthly', label: 'Setiap Bulan' },
+              ]}
+            />
           </div>
           <div className="form-group">
             <label className="form-label">Mulai Dari</label>
-            <input className="form-input" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
+            <DatePicker value={startDate} onChange={setStartDate} title="Mulai dari tanggal" required />
           </div>
           <div className="form-group">
             <label className="form-label">Catatan (opsional)</label>

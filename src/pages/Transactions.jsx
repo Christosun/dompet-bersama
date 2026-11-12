@@ -9,6 +9,8 @@ import { PlusCircle, Search, Trash2, Pencil, ChevronLeft, ChevronRight, ChevronD
 import { CategoryIcon } from '../components/CategoryIcon'
 import TransactionModal from '../components/TransactionModal'
 import { SkeletonTransactionList } from '../components/Skeleton'
+import Select from '../components/Select'
+import DatePicker from '../components/DatePicker'
 
 function formatDateHeader(dateStr) {
   const date = new Date(dateStr + 'T00:00:00')
@@ -169,6 +171,26 @@ export default function Transactions() {
   const activeCount = [filterType !== 'all', filterCat !== 'all', filterUser !== 'all', dateFrom, dateTo, search].filter(Boolean).length
   const hasFilter = activeCount > 0
 
+  const typeOptions = [
+    { value: 'all', label: 'Semua' },
+    { value: 'expense', label: 'Pengeluaran' },
+    { value: 'income', label: 'Pemasukan' },
+  ]
+  const catOptions = [
+    { value: 'all', label: 'Semua Kategori' },
+    ...categories.map(c => ({
+      value: c.id, label: c.name,
+      icon: <CategoryIcon icon={c.icon} size={15} color={c.color} />,
+    })),
+  ]
+  const userOptions = [
+    { value: 'all', label: 'Semua' },
+    ...Object.values(profiles).map(p => ({
+      value: p.id, label: p.name,
+      icon: <Avatar name={p.name} size={20} />,
+    })),
+  ]
+
   return (
     <div>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -205,33 +227,23 @@ export default function Transactions() {
             <div className="filter-grid">
               <div className="filter-jenis">
                 <div className="form-label" style={{ marginBottom: 6 }}>Jenis</div>
-                <select className="form-input" value={filterType} onChange={e => setFilterType(e.target.value)}>
-                  <option value="all">Semua</option>
-                  <option value="expense">Pengeluaran</option>
-                  <option value="income">Pemasukan</option>
-                </select>
+                <Select value={filterType} onChange={setFilterType} options={typeOptions} title="Jenis" />
               </div>
               <div className="filter-kategori">
                 <div className="form-label" style={{ marginBottom: 6 }}>Kategori</div>
-                <select className="form-input" value={filterCat} onChange={e => setFilterCat(e.target.value)}>
-                  <option value="all">Semua Kategori</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <Select value={filterCat} onChange={setFilterCat} options={catOptions} title="Kategori" />
               </div>
               <div className="filter-oleh">
                 <div className="form-label" style={{ marginBottom: 6 }}>Dicatat oleh</div>
-                <select className="form-input" value={filterUser} onChange={e => setFilterUser(e.target.value)}>
-                  <option value="all">Semua</option>
-                  {Object.values(profiles).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
+                <Select value={filterUser} onChange={setFilterUser} options={userOptions} title="Dicatat oleh" />
               </div>
               <div className="filter-dari">
                 <div className="form-label" style={{ marginBottom: 6 }}>Dari</div>
-                <input type="date" className="form-input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+                <DatePicker value={dateFrom} onChange={setDateFrom} max={dateTo || undefined} placeholder="Pilih tanggal" title="Dari tanggal" />
               </div>
               <div className="filter-sampai">
                 <div className="form-label" style={{ marginBottom: 6 }}>Sampai</div>
-                <input type="date" className="form-input" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+                <DatePicker value={dateTo} onChange={setDateTo} min={dateFrom || undefined} placeholder="Pilih tanggal" title="Sampai tanggal" />
               </div>
               <div className="filter-cari">
                 <div className="form-label" style={{ marginBottom: 6 }}>Cari</div>

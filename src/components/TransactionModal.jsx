@@ -3,6 +3,10 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { X, ArrowDownLeft, ArrowUpRight, Wallet, Tag, FileText } from 'lucide-react'
+import Select from './Select'
+import { CategoryIcon } from './CategoryIcon'
+import DatePicker from './DatePicker'
+import { todayStr } from '../lib/utils'
 
 export default function TransactionModal({ onClose, onSaved, editData }) {
   const { user } = useAuth()
@@ -11,7 +15,7 @@ export default function TransactionModal({ onClose, onSaved, editData }) {
   const [amount, setAmount] = useState(editData?.amount || '')
   const [categoryId, setCategoryId] = useState(editData?.category_id || '')
   const [note, setNote] = useState(editData?.note || '')
-  const [date, setDate] = useState(editData?.date || new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(editData?.date || todayStr())
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(false)
 
@@ -107,20 +111,23 @@ export default function TransactionModal({ onClose, onSaved, editData }) {
 
           <div className="form-group">
             <label className="form-label">Kategori</label>
-            <div className="has-ico">
-              <select className="form-input" value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
-                <option value="">Pilih kategori</option>
-                {categories.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-              <Tag size={17} className="field-ico" />
-            </div>
+            <Select
+              value={categoryId}
+              onChange={setCategoryId}
+              leftIcon={Tag}
+              placeholder="Pilih kategori"
+              title="Pilih Kategori"
+              required
+              options={categories.map(c => ({
+                value: c.id, label: c.name,
+                icon: <CategoryIcon icon={c.icon} size={15} color={c.color} />,
+              }))}
+            />
           </div>
 
           <div className="form-group">
             <label className="form-label">Tanggal</label>
-            <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
+            <DatePicker value={date} onChange={setDate} title="Pilih Tanggal" required />
           </div>
 
           <div className="form-group">

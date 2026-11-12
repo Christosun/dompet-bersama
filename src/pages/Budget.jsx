@@ -7,6 +7,7 @@ import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
 import { ChevronLeft, ChevronRight, PlusCircle, X, Pencil, Copy, Target, AlertTriangle, Tag, Wallet } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
 import { SkeletonBudgetList, SkeletonStatGrid } from '../components/Skeleton'
+import Select from '../components/Select'
 
 function BudgetModal({ data, categories, month, year, onClose, onSaved }) {
   const { user } = useAuth()
@@ -47,15 +48,17 @@ function BudgetModal({ data, categories, month, year, onClose, onSaved }) {
         <form onSubmit={handleSave}>
           <div className="form-group">
             <label className="form-label">Kategori Pengeluaran</label>
-            <div className="has-ico">
-              <select className="form-input" value={categoryId} onChange={e => setCategoryId(e.target.value)} required disabled={!!data}>
-                <option value="">Pilih kategori</option>
-                {categories.filter(c => c.type === 'expense' || c.type === 'both').map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-              <Tag size={17} className="field-ico" />
-            </div>
+            <Select
+              value={categoryId} onChange={setCategoryId} leftIcon={Tag}
+              placeholder="Pilih kategori" title="Kategori Pengeluaran"
+              required disabled={!!data}
+              options={categories
+                .filter(c => c.type === 'expense' || c.type === 'both')
+                .map(c => ({
+                  value: c.id, label: c.name,
+                  icon: <CategoryIcon icon={c.icon} size={15} color={c.color} />,
+                }))}
+            />
           </div>
           <div className="form-group">
             <label className="form-label">Budget Bulan {getMonthName(month, year)} (Rp)</label>

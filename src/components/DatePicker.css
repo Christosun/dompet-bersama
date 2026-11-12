@@ -1,0 +1,107 @@
+/* ══════════════════════════════
+   CUSTOM DATE PICKER
+   (memakai ulang .sel-pop / .sel-sheet dari Select.css)
+══════════════════════════════ */
+
+.dp-pop { padding: 12px; overflow-y: auto; }
+.dp-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+
+.dp-head { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+
+.dp-nav {
+  width: 36px; height: 36px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-card2); border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text-sub); cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.dp-nav:hover { border-color: var(--border-hover); color: var(--text); }
+
+.dp-title {
+  flex: 1; min-width: 0; height: 36px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  background: none; border: 1px solid transparent; border-radius: 10px;
+  color: var(--text); font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.dp-title:hover { background: var(--bg-card2); }
+.dp-title svg { color: var(--text-muted); transition: transform 0.2s; }
+
+.dp-week {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+.dp-week span {
+  text-align: center; padding: 4px 0;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+
+.dp-day {
+  position: relative;
+  height: 36px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid transparent; border-radius: 9px;
+  background: none; color: var(--text-sub);
+  font-family: var(--font-body); font-size: 13px; font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.dp-day.is-out { color: var(--text-muted); opacity: 0.45; }
+.dp-day.is-hi { background: var(--bg-card2); color: var(--text); }
+.dp-day.is-today { border-color: var(--border-hover); color: var(--accent); font-weight: 700; }
+.dp-day.is-sel,
+.dp-day.is-sel:hover {
+  background: var(--gold-gradient); border-color: transparent;
+  color: #1a0e00; font-weight: 700; opacity: 1;
+}
+.dp-day:disabled { opacity: 0.22; cursor: not-allowed; background: none; }
+
+/* ── Pilih bulan ── */
+.dp-months { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 4px 0 2px; }
+.dp-month {
+  height: 44px; border: 1px solid transparent; border-radius: 10px;
+  background: var(--bg-card2); color: var(--text-sub);
+  font-family: var(--font-body); font-size: 13.5px; font-weight: 500;
+  cursor: pointer; transition: background 0.12s, color 0.12s, border-color 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.dp-month:hover:not(:disabled) { color: var(--text); border-color: var(--border-hover); }
+.dp-month.is-today { color: var(--accent); }
+.dp-month.is-sel { background: var(--accent-dim); border-color: var(--border-hover); color: var(--accent); font-weight: 700; }
+.dp-month:disabled { opacity: 0.25; cursor: not-allowed; }
+
+/* ── Footer ── */
+.dp-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border);
+}
+.dp-link {
+  background: none; border: none; padding: 8px 10px; border-radius: 8px;
+  color: var(--accent); font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.dp-link:hover:not(:disabled) { background: var(--accent-dim); }
+.dp-link:disabled { opacity: 0.35; cursor: default; }
+.dp-link-muted { color: var(--text-muted); }
+.dp-link-muted:hover:not(:disabled) { background: var(--bg-card2); color: var(--text); }
+
+/* ── HP: sel lebih besar & mudah diketuk ── */
+.dp-sheet { overflow: hidden; }
+.dp-sheet .dp-day { height: 44px; font-size: 15px; }
+.dp-sheet .dp-nav, .dp-sheet .dp-title { height: 42px; }
+.dp-sheet .dp-nav { width: 42px; }
+.dp-sheet .dp-title { font-size: 15px; }
+.dp-sheet .dp-month { height: 52px; font-size: 15px; }
+.dp-sheet .dp-link { padding: 10px 12px; font-size: 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dp-day, .dp-month, .dp-nav, .dp-title, .dp-link { transition: none; }
+}

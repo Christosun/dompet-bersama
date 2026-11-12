@@ -40,3 +40,10 @@ export function getAvatarColor(name) {
   const index = (name || '').charCodeAt(0) % colors.length
   return colors[index]
 }
+
+// Tanggal lokal (YYYY-MM-DD). toISOString() memakai UTC, jadi di WIB antara
+// jam 00.00–07.00 hasilnya masih tanggal kemarin.
+export function todayStr() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}

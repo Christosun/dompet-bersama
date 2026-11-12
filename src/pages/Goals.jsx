@@ -11,6 +11,7 @@ import {
   Calendar, BarChart2, Target, AlertCircle, Clock, Layers, Landmark,
   PiggyBank, FileText,
 } from 'lucide-react'
+import DatePicker from '../components/DatePicker'
 
 /* ─── SQL Setup ──────────────────────────────────────────── */
 const SETUP_SQL = `-- Jalankan di Supabase Dashboard → SQL Editor
@@ -144,7 +145,7 @@ function GoalModal({ data, onClose, onSaved }) {
           </div>
           <div className="form-group">
             <label className="form-label">Deadline (opsional)</label>
-            <input className="form-input" type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
+            <DatePicker value={deadline} onChange={setDeadline} placeholder="Pilih tanggal" title="Deadline" />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" className="btn btn-ghost" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>Batal</button>

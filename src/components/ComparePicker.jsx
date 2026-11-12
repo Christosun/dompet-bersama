@@ -2,6 +2,7 @@ import { History, Layers, Calendar, ChevronLeft, ChevronRight } from 'lucide-rea
 import { getCurrentMonth, getMonthName } from '../lib/utils'
 import { shiftMonth, shortMonthName } from '../lib/months'
 import './ComparePicker.css'
+import Select from './Select'
 
 const TABS = [
   { key: 'avg3', title: 'Rata-rata', Icon: Layers },
@@ -81,23 +82,22 @@ export default function ComparePicker({ mode, onModeChange, month, year, customM
               <ChevronLeft size={16} />
             </button>
 
-            <select
+            <Select
               id="cmp-month"
-              className="cmp-select"
+              size="sm"
+              className="cmp-select-wrap"
+              title="Bandingkan dengan bulan"
               value={keyOf(customMonth)}
-              onChange={e => {
-                const [y, m] = e.target.value.split('-').map(Number)
+              onChange={v => {
+                const [y, m] = v.split('-').map(Number)
                 onCustomChange({ month: m, year: y })
               }}
-            >
-              {years.map(y => (
-                <optgroup key={y} label={String(y)}>
-                  {options.filter(o => o.year === y).map(o => (
-                    <option key={keyOf(o)} value={keyOf(o)}>{getMonthName(o.month, o.year)}</option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+              options={options.map(o => ({
+                value: keyOf(o),
+                label: getMonthName(o.month, o.year),
+                group: String(o.year),
+              }))}
+            />
 
             <button
               type="button"
