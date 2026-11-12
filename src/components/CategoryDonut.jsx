@@ -99,7 +99,7 @@ export default function CategoryDonut({ data, colors = DEFAULT_COLORS, maxItems 
             paddingAngle={items.length > 1 ? 2 : 0}
             cornerRadius={3}
             stroke="none"
-            isAnimationActive={false}
+            animationDuration={500}
             activeIndex={active == null ? -1 : active}
             activeShape={renderActive}
             onMouseEnter={(_, i) => enter(i)}

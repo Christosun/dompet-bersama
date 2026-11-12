@@ -426,7 +426,6 @@ export default function Reports() {
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} interval={4} />
                   <YAxis tick={{ fontSize: 9, fill: 'var(--text-muted)' }} tickFormatter={v => v >= 1000000 ? `${v/1000000}jt` : `${v/1000}rb`} />
                   <Tooltip
-                    isAnimationActive={false}
                     formatter={v => formatRupiah(v)}
                     contentStyle={TOOLTIP_STYLE}
                     itemStyle={{ color: '#f5f0e8' }}
@@ -435,10 +434,10 @@ export default function Reports() {
                     cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                   />
                   {(dailyFilter === 'all' || dailyFilter === 'income') && (
-                    <Bar isAnimationActive={false} dataKey="income" name="Pemasukan" fill="var(--green)" radius={[3,3,0,0]} opacity={0.8} />
+                    <Bar dataKey="income" name="Pemasukan" fill="var(--green)" radius={[3,3,0,0]} opacity={0.8} />
                   )}
                   {(dailyFilter === 'all' || dailyFilter === 'expense') && (
-                    <Bar isAnimationActive={false} dataKey="expense" name="Pengeluaran" fill="var(--accent)" radius={[3,3,0,0]} opacity={0.8} />
+                    <Bar dataKey="expense" name="Pengeluaran" fill="var(--accent)" radius={[3,3,0,0]} opacity={0.8} />
                   )}
                   <Legend wrapperStyle={{ fontSize: 11, color: 'var(--text-muted)' }} />
                 </BarChart>
@@ -589,7 +588,6 @@ export default function Reports() {
                 {/* Garis pembanding (putus-putus, halus) */}
                 {hasAvgData && (
                   <Line
-                    isAnimationActive={false}
                     type="monotone"
                     dataKey="avg"
                     name={compare.tip}
@@ -604,7 +602,6 @@ export default function Reports() {
 
                 {/* Area fill under current line */}
                 <Area
-                  isAnimationActive={false}
                   type="monotone"
                   dataKey="current"
                   fill="url(#currentGrad)"
@@ -614,7 +611,6 @@ export default function Reports() {
 
                 {/* Current month line */}
                 <Line
-                  isAnimationActive={false}
                   type="monotone"
                   dataKey="current"
                   name="Bulan ini"
