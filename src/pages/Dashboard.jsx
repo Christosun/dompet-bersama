@@ -304,9 +304,9 @@ export default function Dashboard() {
                 <BarChart data={dailyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
                   <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickFormatter={v => v >= 1000000 ? `${v / 1000000}jt` : `${v / 1000}rb`} />
-                  <Tooltip formatter={v => formatRupiah(v)} contentStyle={TOOLTIP_STYLE} itemStyle={{ color: '#f5f0e8' }} labelStyle={{ color: '#f7c055', fontWeight: 600 }} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-                  <Bar dataKey="income" name="Pemasukan" fill="var(--green)" radius={[4, 4, 0, 0]} opacity={0.8} />
-                  <Bar dataKey="expense" name="Pengeluaran" fill="var(--accent)" radius={[4, 4, 0, 0]} opacity={0.8} />
+                  <Tooltip isAnimationActive={false} formatter={v => formatRupiah(v)} contentStyle={TOOLTIP_STYLE} itemStyle={{ color: '#f5f0e8' }} labelStyle={{ color: '#f7c055', fontWeight: 600 }} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+                  <Bar dataKey="income" isAnimationActive={false} name="Pemasukan" fill="var(--green)" radius={[4, 4, 0, 0]} opacity={0.8} />
+                  <Bar dataKey="expense" isAnimationActive={false} name="Pengeluaran" fill="var(--accent)" radius={[4, 4, 0, 0]} opacity={0.8} />
                 </BarChart>
               </ResponsiveContainer>
             )
