@@ -1298,3 +1298,44 @@ select.form-input {
   background-position: right 14px center;
   background-size: 16px 16px;
 }
+
+/* ══════════════════════════════════════════════════════════
+   MOBILE: animasi seragam dengan modal (slideUp 0.2s + fadeIn 0.15s)
+   Berlaku untuk: Select, DatePicker, Export, Filter
+══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Backdrop: tanpa blur (ini penyebab utama lag), cukup gelap */
+  .modal-backdrop,
+  .sel-layer .sel-backdrop,
+  .export-backdrop {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgba(0, 0, 0, 0.78);
+    animation: fadeIn 0.15s ease;
+  }
+
+  /* Sheet: naik 16px + memudar, sama dengan .modal */
+  .sel-layer .sel-sheet,
+  .export-panel {
+    animation: slideUp 0.2s ease;
+    will-change: transform, opacity;
+  }
+
+  /* Filter: tanpa animasi tinggi. Muncul dengan efek yang sama, tutup instan */
+  .filter-collapse,
+  .filter-collapse.closed {
+    display: block;
+    transition: none;
+  }
+  .filter-collapse.closed { display: none; }
+  .filter-collapse:not(.closed) .filter-inner {
+    animation: slideUp 0.2s ease;
+  }
+}
+
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+  .modal-backdrop, .sel-layer .sel-backdrop, .export-backdrop,
+  .sel-layer .sel-sheet, .export-panel,
+  .filter-collapse:not(.closed) .filter-inner { animation: none; }
+}
