@@ -14,7 +14,12 @@ import Recurring from './pages/Recurring'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="spinner" style={{ marginTop: '30vh' }} />
+  if (loading) return (
+    <div className="app-loader" role="status" aria-live="polite">
+      <div className="spinner" />
+      <span className="app-loader-text">Memuat…</span>
+    </div>
+  )
   return user ? children : <Navigate to="/auth" />
 }
 

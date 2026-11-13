@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import DatePicker from '../components/DatePicker'
 import MonthNav from '../components/MonthNav'
+import { SkeletonSavings, SkeletonGoalList, SkeletonRekapBody } from '../components/Skeleton'
 
 /* ─── SQL Setup ──────────────────────────────────────────── */
 const SETUP_SQL = `-- Jalankan di Supabase Dashboard → SQL Editor
@@ -777,7 +778,7 @@ export default function Goals() {
         ))}
       </div>
 
-      {loading ? <div className="spinner" /> : (
+      {loading ? (activeTab === 'savings' ? <SkeletonSavings /> : <SkeletonGoalList />) : (
         <>
           {/* ══ SAVINGS TAB ═══════════════════════════════════════════ */}
           {activeTab === 'savings' && (
@@ -916,7 +917,7 @@ export default function Goals() {
 
                 {/* Rekap body */}
                 <div style={{ padding: '20px' }}>
-                  {monthDataLoading ? <div className="spinner" style={{ margin: '10px auto' }} /> : (
+                  {monthDataLoading ? <SkeletonRekapBody /> : (
                     <>
                       {/* Income/Expense rows */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>

@@ -48,9 +48,14 @@
 
 .mn-year { flex: 1; text-align: center; font-size: 14px; font-weight: 600; color: var(--text); }
 
-/* HP: kapsul selebar layar (maks 360px), area ketuk lebih besar */
+/* HP: kapsul selebar kolom, sejajar dengan kartu stat di bawahnya */
 @media (max-width: 768px) {
-  .mn { display: flex; width: 100%; max-width: 360px; margin: 0 auto; }
+  .mn {
+    display: flex;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
   .mn-step { width: 44px; height: 44px; }
   .mn-trigger { flex: 1; min-width: 0; height: 44px; font-size: 15px; }
 }

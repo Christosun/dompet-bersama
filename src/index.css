@@ -1374,3 +1374,25 @@ select.form-input {
   .btn, .type-toggle button, .pick-opt { transition: none; animation: none; }
   .type-toggle button.active-expense, .type-toggle button.active-income { animation: none; }
 }
+
+/* ── Loader layar penuh (saat cek sesi setelah refresh) ── */
+.app-loader {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  z-index: 50;
+}
+.app-loader .spinner { margin: 0; }
+.app-loader-text {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  animation: fadeIn 0.4s ease 0.3s both;
+}

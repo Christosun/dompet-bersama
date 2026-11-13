@@ -227,6 +227,34 @@ export default function Transactions() {
         <MonthNav month={month} year={year} onChange={setMonthYear} />
       </div>
 
+      {/* Summary stats */}
+      {loading ? (
+        <SkeletonStatGrid />
+      ) : (
+        <div className="stat-grid">
+          <div className="stat-card">
+            <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><TrendingUp size={11} style={{ color: 'var(--green)' }} /> Pemasukan</div>
+            <div className="stat-value green">{formatRupiah(totalIncome)}</div>
+            <div className="stat-sub">{filtered.filter(t => t.type === 'income').length} transaksi</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><TrendingDown size={11} style={{ color: 'var(--red)' }} /> Pengeluaran</div>
+            <div className="stat-value red">{formatRupiah(totalExpense)}</div>
+            <div className="stat-sub">{filtered.filter(t => t.type === 'expense').length} transaksi</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Wallet size={11} /> Selisih</div>
+            <div className={`stat-value ${totalNet >= 0 ? 'green' : 'red'}`}>{formatRupiah(totalNet)}</div>
+            <div className="stat-sub">{filtered.length} total transaksi</div>
+          </div>
+          <div className="stat-card" title={avgHint}>
+            <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Activity size={11} /> Rata-rata/Hari</div>
+            <div className="stat-value gold">{formatRupiah(avgPerDay)}</div>
+            <div className="stat-sub">{avgIsIncome ? 'Pemasukan' : 'Pengeluaran'} · {avgDays} hari</div>
+          </div>
+        </div>
+      )}
+      
       {/* Filters */}
       <div className="card filter-card" style={{ marginBottom: 16 }}>
         <div className="filter-head">
@@ -274,34 +302,6 @@ export default function Transactions() {
           </div>
         </div>
       </div>
-
-      {/* Summary stats */}
-      {loading ? (
-        <SkeletonStatGrid />
-      ) : (
-        <div className="stat-grid">
-          <div className="stat-card">
-            <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><TrendingUp size={11} style={{ color: 'var(--green)' }} /> Pemasukan</div>
-            <div className="stat-value green">{formatRupiah(totalIncome)}</div>
-            <div className="stat-sub">{filtered.filter(t => t.type === 'income').length} transaksi</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><TrendingDown size={11} style={{ color: 'var(--red)' }} /> Pengeluaran</div>
-            <div className="stat-value red">{formatRupiah(totalExpense)}</div>
-            <div className="stat-sub">{filtered.filter(t => t.type === 'expense').length} transaksi</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Wallet size={11} /> Selisih</div>
-            <div className={`stat-value ${totalNet >= 0 ? 'green' : 'red'}`}>{formatRupiah(totalNet)}</div>
-            <div className="stat-sub">{filtered.length} total transaksi</div>
-          </div>
-          <div className="stat-card" title={avgHint}>
-            <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Activity size={11} /> Rata-rata/Hari</div>
-            <div className="stat-value gold">{formatRupiah(avgPerDay)}</div>
-            <div className="stat-sub">{avgIsIncome ? 'Pemasukan' : 'Pengeluaran'} · {avgDays} hari</div>
-          </div>
-        </div>
-      )}
 
       {/* Grouped list */}
       {loading ? <SkeletonTransactionList count={3} /> : sortedDates.length === 0 ? (

@@ -10,6 +10,7 @@ import { CategoryIcon } from '../components/CategoryIcon'
 import Select from '../components/Select'
 import DatePicker from '../components/DatePicker'
 import { formatRupiah, todayStr } from '../lib/utils'
+import { SkeletonRecurringList } from '../components/Skeleton'
 
 const SETUP_SQL = `-- Jalankan di Supabase Dashboard → SQL Editor
 create table if not exists recurring_transactions (
@@ -222,7 +223,7 @@ export default function Recurring() {
         </button>
       </div>
 
-      {loading ? <div className="spinner" /> : items.length === 0 ? (
+      {loading ? <SkeletonRecurringList /> : items.length === 0 ? (
         <div className="empty-state">
           <div className="icon"><RefreshCw size={44} strokeWidth={1.2} /></div>
           <h3>Belum ada transaksi berulang</h3>

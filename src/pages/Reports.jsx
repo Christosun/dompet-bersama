@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
 import { shiftMonth as subtractMonths, shortMonthName } from '../lib/months'
-import { TrendingUp, TrendingDown, Minus, PieChart as PieChartIcon, Info } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, PieChart as PieChartIcon, Info, Wallet, Receipt } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
@@ -13,6 +13,7 @@ import ExportMenu from '../components/ExportMenu'
 import ComparePicker from '../components/ComparePicker'
 import { exportReport } from '../lib/exportReport'
 import MonthNav from '../components/MonthNav'
+import { SkeletonReports } from '../components/Skeleton'
 
 const TOOLTIP_STYLE = {
   background: '#1a1d24',
@@ -354,26 +355,30 @@ export default function Reports() {
         <MonthNav month={month} year={year} onChange={setMonthYear} />
       </div>
 
-      {loading ? <div className="spinner" /> : (
+      {loading ? <SkeletonReports /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
           {/* Summary row */}
           <div className="stat-grid" style={{ marginBottom: 0 }}>
             <div className="stat-card">
-              <div className="stat-label">Pemasukan</div>
+              <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><TrendingUp size={11} style={{ color: 'var(--green)' }} /> Pemasukan</div>
               <div className="stat-value green">{formatRupiah(totalIncome)}</div>
+              <div className="stat-sub">{transactions.filter(t => t.type === 'income').length} transaksi</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Pengeluaran</div>
+              <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><TrendingDown size={11} style={{ color: 'var(--red)' }} /> Pengeluaran</div>
               <div className="stat-value red">{formatRupiah(totalExpense)}</div>
+              <div className="stat-sub">{transactions.filter(t => t.type === 'expense').length} transaksi</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Selisih</div>
+              <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Wallet size={11} /> Selisih</div>
               <div className={`stat-value ${totalIncome - totalExpense >= 0 ? 'green' : 'red'}`}>{formatRupiah(totalIncome - totalExpense)}</div>
+              <div className="stat-sub">{totalIncome - totalExpense >= 0 ? 'Surplus' : 'Defisit'}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Total Transaksi</div>
+              <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Receipt size={11} /> Total Transaksi</div>
               <div className="stat-value gold">{transactions.length}</div>
+              <div className="stat-sub">{getMonthName(month, year)}</div>
             </div>
           </div>
 

@@ -7,7 +7,7 @@ import { PlusCircle, Wallet, TrendingUp, TrendingDown, Activity, Receipt, BarCha
 import { CategoryIcon } from '../components/CategoryIcon'
 import TransactionModal from '../components/TransactionModal'
 import CalendarHeatmap from '../components/CalendarHeatmap'
-import { SkeletonStatGrid, SkeletonTransactionList } from '../components/Skeleton'
+import { SkeletonStatGrid, SkeletonTransactionList, SkeletonChart, SkeletonDonut } from '../components/Skeleton'
 import { Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from 'recharts'
 import CategoryDonut from '../components/CategoryDonut'
 import MonthNav from '../components/MonthNav'
@@ -284,7 +284,7 @@ export default function Dashboard() {
       <div className="grid-2" style={{ marginBottom: 24 }}>
         <div className="card">
           <div className="section-title">Tren Harian</div>
-          {loading ? <div style={{ height: 232, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" style={{ margin: 0 }} /></div> :
+          {loading ? <SkeletonChart /> :
             dailyData.length === 0 ? (
               <div className="empty-state" style={{ padding: '30px 0' }}><div className="icon"><BarChart2 size={36} strokeWidth={1.2} /></div><p>Belum ada data</p></div>
             ) : (
@@ -304,7 +304,7 @@ export default function Dashboard() {
         <div className="card">
           <div className="section-title">Pengeluaran per Kategori</div>
           <div style={{ minHeight: 232, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {loading ? <div className="spinner" style={{ margin: 0 }} /> :
+          {loading ? <SkeletonDonut /> :
               pieData.length === 0 ? (
                 <div className="empty-state" style={{ padding: 0 }}>
                   <div className="icon"><PieChartIcon size={36} strokeWidth={1.2} /></div>

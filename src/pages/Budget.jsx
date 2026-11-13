@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
-import { PlusCircle, X, Pencil, Copy, Target, AlertTriangle, Tag, Wallet } from 'lucide-react'
+import { PlusCircle, X, Pencil, Copy, Target, AlertTriangle, Tag, Wallet, TrendingDown, Activity } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
 import { SkeletonBudgetList, SkeletonStatGrid } from '../components/Skeleton'
 import Select from '../components/Select'
@@ -172,6 +172,20 @@ export default function Budget() {
   const totalSpent = budgets.reduce((s, b) => s + (spending[b.category_id] || 0), 0)
   const totalLeft = totalBudget - totalSpent
 
+  // ── Batas harian: sisa budget ÷ sisa hari (hanya bulan berjalan) ──
+  const nowMY = getCurrentMonth()
+  const isCurrentMonth = month === nowMY.month && year === nowMY.year
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const daysLeft = isCurrentMonth ? daysInMonth - new Date().getDate() + 1 : 0 // termasuk hari ini
+  const dailyLimit = daysLeft > 0 ? Math.round(Math.max(totalLeft, 0) / daysLeft) : 0
+  const dailySub = totalBudget === 0
+    ? 'Belum ada budget'
+    : daysLeft === 0
+      ? 'Bulan sudah berakhir'
+      : totalLeft <= 0
+        ? 'Budget sudah habis'
+        : `Sisa ${daysLeft} hari bulan ini`
+
   function getBarColor(pct) {
     if (pct >= 100) return 'var(--red)'
     if (pct >= 80) return '#f59e0b'
@@ -211,22 +225,28 @@ export default function Budget() {
       ) : (
         <>
           {/* Summary */}
-          <div className="stat-grid-3" style={{ marginBottom: 24 }}>
+          <div className="stat-grid">
             <div className="stat-card">
-              <div className="stat-label">Total Budget</div>
+              <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Target size={11} /> Total Budget</div>
               <div className="stat-value gold">{formatRupiah(totalBudget)}</div>
+              <div className="stat-sub">{budgets.length} kategori</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Terpakai</div>
+              <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><TrendingDown size={11} style={{ color: 'var(--red)' }} /> Terpakai</div>
               <div className="stat-value red">{formatRupiah(totalSpent)}</div>
               <div className="stat-sub">{totalBudget > 0 ? Math.round(totalSpent / totalBudget * 100) : 0}% dari budget</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Sisa Budget</div>
+              <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Wallet size={11} /> Sisa Budget</div>
               <div className={`stat-value ${totalLeft >= 0 ? 'green' : 'red'}`}>{formatRupiah(totalLeft)}</div>
               <div className="stat-sub" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 {totalLeft < 0 ? <><AlertTriangle size={11} style={{ color: 'var(--red)', flexShrink: 0 }} /> Melebihi budget!</> : 'Aman'}
               </div>
+            </div>
+            <div className="stat-card" title="Sisa budget ÷ sisa hari di bulan ini (termasuk hari ini)">
+              <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Activity size={11} /> Batas Harian</div>
+              <div className="stat-value gold">{daysLeft > 0 ? formatRupiah(dailyLimit) : '—'}</div>
+              <div className="stat-sub">{dailySub}</div>
             </div>
           </div>
 
