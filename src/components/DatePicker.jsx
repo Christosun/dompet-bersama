@@ -79,6 +79,10 @@ export default function DatePicker({
   const uid = useId()
   const triggerRef = useRef(null)
   const panelRef = useRef(null)
+  const [flashDay, setFlashDay] = useState(null)
+  const [flash, setFlash] = useState(false)
+  const timers = useRef([])
+  useEffect(() => () => timers.current.forEach(clearTimeout), [])
 
   const today = todayStr()
   const isOff = s => (min && s < min) || (max && s > max)
@@ -99,9 +103,17 @@ export default function DatePicker({
 
   function pick(c) {
     const s = toStr(c)
-    if (isOff(s)) return
-    if (s !== value) onChange(s)
-    close()
+    if (isOff(s) || flashDay) return
+    setFlashDay(s)
+    timers.current.push(setTimeout(() => {
+      setFlashDay(null)
+      close()
+      if (s !== value) {
+        onChange(s)
+        setFlash(true)
+        timers.current.push(setTimeout(() => setFlash(false), 700))
+      }
+    }, 140))
   }
 
   function pickToday() { pick(parse(today)) }
@@ -219,6 +231,7 @@ export default function DatePicker({
       return { ...c, s: toStr(c), out: c.m !== cursor.m }
     })
     const cursorStr = toStr(cursor)
+    const selStr = flashDay || value
 
     return (
       <>
@@ -245,16 +258,16 @@ export default function DatePicker({
                 role="gridcell"
                 tabIndex={-1}
                 disabled={off}
-                aria-selected={c.s === value}
+                aria-selected={c.s === selStr}
                 aria-current={c.s === today ? 'date' : undefined}
                 className={[
                   'dp-day',
                   c.out ? 'is-out' : '',
                   c.s === today ? 'is-today' : '',
-                  c.s === value ? 'is-sel' : '',
-                  c.s === cursorStr && c.s !== value ? 'is-hi' : '',
+                  c.s === selStr ? 'is-sel' : '',
+                  c.s === cursorStr && c.s !== selStr ? 'is-hi' : '',
                 ].filter(Boolean).join(' ')}
-                onMouseEnter={() => setCursor({ y: c.y, m: c.m, d: c.d })}
+                onMouseEnter={() => { if (!c.out) setCursor({ y: c.y, m: c.m, d: c.d }) }}
                 onClick={() => pick(c)}
               >{c.d}</button>
             )
@@ -281,8 +294,7 @@ export default function DatePicker({
           ref={triggerRef}
           id={id}
           type="button"
-          className={`sel-trigger has-left${open ? ' is-open' : ''}${value ? '' : ' is-placeholder'}`}
-          disabled={disabled}
+          className={`sel-trigger has-left${open ? ' is-open' : ''}${value ? '' : ' is-placeholder'}${flash ? ' is-flash' : ''}`}disabled={disabled}
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-activedescendant={open && view === 'days' && cursor ? `${uid}-${toStr(cursor)}` : undefined}

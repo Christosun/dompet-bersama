@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
 import { shiftMonth as subtractMonths, shortMonthName } from '../lib/months'
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus, PieChart as PieChartIcon, Info } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, PieChart as PieChartIcon, Info } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
@@ -12,6 +12,7 @@ import CategoryDonut from '../components/CategoryDonut'
 import ExportMenu from '../components/ExportMenu'
 import ComparePicker from '../components/ComparePicker'
 import { exportReport } from '../lib/exportReport'
+import MonthNav from '../components/MonthNav'
 
 const TOOLTIP_STYLE = {
   background: '#1a1d24',
@@ -179,17 +180,6 @@ export default function Reports() {
     setProfiles(pm)
     setTransactions(txs || [])
     setLoading(false)
-  }
-
-  function prevMonth() {
-    setMonthYear(({ month, year }) => month === 1 ? { month: 12, year: year - 1 } : { month: month - 1, year })
-  }
-  function nextMonth() {
-    const now = getCurrentMonth()
-    setMonthYear(({ month, year }) => {
-      if (year === now.year && month === now.month) return { month, year }
-      return month === 12 ? { month: 1, year: year + 1 } : { month: month + 1, year }
-    })
   }
 
   // ── Derived stats ──────────────────────────────────────────
@@ -360,10 +350,8 @@ export default function Reports() {
         )}
       </div>
 
-      <div className="month-nav" style={{ marginBottom: 24 }}>
-        <button className="month-nav-btn" onClick={prevMonth}><ChevronLeft size={16} /></button>
-        <span className="month-name">{getMonthName(month, year)}</span>
-        <button className="month-nav-btn" onClick={nextMonth}><ChevronRight size={16} /></button>
+      <div style={{ marginBottom: 24 }}>
+        <MonthNav month={month} year={year} onChange={setMonthYear} />
       </div>
 
       {loading ? <div className="spinner" /> : (

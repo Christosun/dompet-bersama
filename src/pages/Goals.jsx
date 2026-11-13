@@ -7,11 +7,12 @@ import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
 import Avatar from '../components/Avatar'
 import {
   PlusCircle, X, Pencil, Trophy, CheckCircle, Plus,
-  Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight,
+  Wallet, TrendingUp, TrendingDown,
   Calendar, BarChart2, Target, AlertCircle, Clock, Layers, Landmark,
   PiggyBank, FileText,
 } from 'lucide-react'
 import DatePicker from '../components/DatePicker'
+import MonthNav from '../components/MonthNav'
 
 /* ─── SQL Setup ──────────────────────────────────────────── */
 const SETUP_SQL = `-- Jalankan di Supabase Dashboard → SQL Editor
@@ -618,16 +619,6 @@ export default function Goals() {
     toast.success('Rekap dihapus'); loadAll()
   }
 
-  function prevMonth() {
-    if (rekapMonth === 1) { setRekapMonth(12); setRekapYear(y => y - 1) }
-    else setRekapMonth(m => m - 1)
-  }
-  function nextMonth() {
-    if (rekapMonth === nowM && rekapYear === nowY) return
-    if (rekapMonth === 12) { setRekapMonth(1); setRekapYear(y => y + 1) }
-    else setRekapMonth(m => m + 1)
-  }
-
   const isCurrentMonth = rekapMonth === nowM && rekapYear === nowY
   const finalizedRecord = monthlyHistory.find(m => m.month === rekapMonth && m.year === rekapYear)
   const net = monthData.income - monthData.expense
@@ -915,11 +906,12 @@ export default function Goals() {
                       <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Rekap Bulanan</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <button className="btn btn-icon btn-ghost btn-sm" onClick={prevMonth}><ChevronLeft size={14} /></button>
-                    <span style={{ fontSize: 13, fontWeight: 700, minWidth: 110, textAlign: 'center', color: 'var(--text)' }}>{getMonthName(rekapMonth, rekapYear)}</span>
-                    <button className="btn btn-icon btn-ghost btn-sm" onClick={nextMonth} disabled={isCurrentMonth} style={{ opacity: isCurrentMonth ? 0.3 : 1 }}><ChevronRight size={14} /></button>
-                  </div>
+                  <MonthNav
+                    compact
+                    month={rekapMonth}
+                    year={rekapYear}
+                    onChange={({ month, year }) => { setRekapMonth(month); setRekapYear(year) }}
+                  />
                 </div>
 
                 {/* Rekap body */}

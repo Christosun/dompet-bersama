@@ -1339,3 +1339,38 @@ select.form-input {
   .sel-layer .sel-sheet, .export-panel,
   .filter-collapse:not(.closed) .filter-inner { animation: none; }
 }
+
+@media (min-width: 1025px) and (max-width: 1280px) {
+  .stat-grid .stat-value { font-size: 19px; }
+  .stat-grid .stat-card { padding: 18px 18px; }
+}
+
+/* ══ Feedback tekan: tombol di modal & seluruh aplikasi ══ */
+.btn, .type-toggle button, .month-nav-btn, .auth-tab {
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+.btn:active:not(:disabled),
+.type-toggle button:active,
+.auth-tab:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn:focus-visible,
+.type-toggle button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Tombol jenis (Pengeluaran / Pemasukan): beri sedikit "pop" saat aktif */
+.type-toggle button.active-expense,
+.type-toggle button.active-income { animation: tgPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes tgPop { from { transform: scale(0.94); } to { transform: none; } }
+
+/* Pemilih ikon & warna di modal Kategori */
+.pick-opt { transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease; }
+.pick-opt:active { transform: scale(0.88); }
+
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) { transform: translateY(-1px); }
+  .btn-primary:active:not(:disabled) { transform: scale(0.97); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .type-toggle button, .pick-opt { transition: none; animation: none; }
+  .type-toggle button.active-expense, .type-toggle button.active-income { animation: none; }
+}

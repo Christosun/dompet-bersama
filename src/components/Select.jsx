@@ -46,6 +46,10 @@ export default function Select({
   const optionsRef = useRef(options)
   const fromKey = useRef(false)
   const typeBuf = useRef({ s: '', t: 0 })
+  const [picked, setPicked] = useState(-1)   // opsi yang baru diketuk (sebelum panel menutup)
+  const [flash, setFlash] = useState(false)  // kilau di trigger setelah nilai berubah
+  const timers = useRef([])
+  useEffect(() => () => timers.current.forEach(clearTimeout), [])
   optionsRef.current = options
 
   const selIndex = options.findIndex(o => o.value === value)
@@ -64,9 +68,17 @@ export default function Select({
 
   function choose(i) {
     const o = options[i]
-    if (!o) return
-    if (o.value !== value) onChange(o.value)
-    close()
+    if (!o || picked >= 0) return
+    setPicked(i)
+    timers.current.push(setTimeout(() => {
+      setPicked(-1)
+      close()
+      if (o.value !== value) {
+        onChange(o.value)
+        setFlash(true)
+        timers.current.push(setTimeout(() => setFlash(false), 700))
+      }
+    }, 130))
   }
 
   /* ── Posisi popover (desktop) ── */
@@ -172,7 +184,7 @@ export default function Select({
       {options.length === 0 && <li className="sel-empty">Tidak ada pilihan</li>}
       {options.map((o, i) => {
         const showGroup = o.group && o.group !== options[i - 1]?.group
-        const isSel = i === selIndex
+        const isSel = picked >= 0 ? i === picked : i === selIndex
         return (
           <Fragment key={`${o.group || ''}-${o.value}`}>
             {showGroup && <li role="presentation" className="sel-group">{o.group}</li>}
@@ -182,7 +194,7 @@ export default function Select({
               data-i={i}
               data-sel={isSel}
               aria-selected={isSel}
-              className={`sel-opt${isSel ? ' is-sel' : ''}${i === hi ? ' is-hi' : ''}`}
+              className={`sel-opt${isSel ? ' is-sel' : ''}${i === hi ? ' is-hi' : ''}${i === picked ? ' is-pick' : ''}`}
               onMouseEnter={() => setHi(i)}
               onClick={() => choose(i)}
             >
@@ -203,8 +215,7 @@ export default function Select({
           ref={triggerRef}
           id={id}
           type="button"
-          className={`sel-trigger${size === 'sm' ? ' sm' : ''}${open ? ' is-open' : ''}${LeftIcon ? ' has-left' : ''}${selected ? '' : ' is-placeholder'}`}
-          disabled={disabled}
+          className={`sel-trigger${size === 'sm' ? ' sm' : ''}${open ? ' is-open' : ''}${LeftIcon ? ' has-left' : ''}${selected ? '' : ' is-placeholder'}${flash ? ' is-flash' : ''}`}disabled={disabled}
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-controls={open ? uid : undefined}

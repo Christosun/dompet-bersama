@@ -1,0 +1,68 @@
+/* ══════════════════════════════
+   MONTH NAV (kapsul pemilih bulan)
+══════════════════════════════ */
+
+.mn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  max-width: 100%;
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.mn-step {
+  width: 36px; height: 36px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: 1px solid transparent; border-radius: 10px;
+  color: var(--text-sub); cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mn-step:hover:not(:disabled) { background: var(--bg-card); border-color: var(--border); color: var(--text); }
+.mn-step:active:not(:disabled) { transform: scale(0.9); }
+.mn-step:disabled { opacity: 0.3; cursor: default; }
+.mn-step:focus-visible, .mn-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.mn-trigger {
+  height: 36px; min-width: 188px; padding: 0 14px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: none; border: 1px solid transparent; border-radius: 10px;
+  color: var(--text); font-family: var(--font-body); font-size: 14.5px; font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mn-trigger:hover { background: var(--bg-card); border-color: var(--border); }
+.mn-trigger:active { transform: scale(0.98); }
+.mn-trigger.is-open { background: var(--accent-dim); border-color: var(--border-hover); color: var(--accent); }
+
+.mn-ico { color: var(--accent); flex-shrink: 0; }
+.mn-chev { color: var(--text-muted); flex-shrink: 0; transition: transform 0.2s ease; }
+.mn-trigger.is-open .mn-chev { transform: rotate(180deg); color: var(--accent); }
+
+.mn-label { white-space: nowrap; animation: mnIn 0.2s ease; }
+@keyframes mnIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.mn-year { flex: 1; text-align: center; font-size: 14px; font-weight: 600; color: var(--text); }
+
+/* HP: kapsul selebar layar (maks 360px), area ketuk lebih besar */
+@media (max-width: 768px) {
+  .mn { display: flex; width: 100%; max-width: 360px; margin: 0 auto; }
+  .mn-step { width: 44px; height: 44px; }
+  .mn-trigger { flex: 1; min-width: 0; height: 44px; font-size: 15px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mn-label { animation: none; }
+  .mn-step, .mn-trigger, .mn-chev { transition: none; }
+}
+
+/* Varian ringkas untuk header kartu (hanya desktop; di HP tetap ukuran ketuk 44px) */
+@media (min-width: 769px) {
+  .mn-compact { border-radius: 12px; }
+  .mn-compact .mn-step { width: 32px; height: 32px; }
+  .mn-compact .mn-trigger { height: 32px; min-width: 156px; font-size: 13.5px; padding: 0 10px; }
+}

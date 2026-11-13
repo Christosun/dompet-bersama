@@ -3,14 +3,15 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useConfirm } from '../contexts/ConfirmContext'
-import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
+import { formatRupiah, getCurrentMonth, getMonthName, todayStr } from '../lib/utils'
 import Avatar from '../components/Avatar'
-import { PlusCircle, Search, Trash2, Pencil, ChevronLeft, ChevronRight, ChevronDown, SlidersHorizontal, SearchX } from 'lucide-react'
+import { PlusCircle, Search, Trash2, Pencil, ChevronDown, SlidersHorizontal, SearchX, Wallet, TrendingUp, TrendingDown, Activity } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
 import TransactionModal from '../components/TransactionModal'
-import { SkeletonTransactionList } from '../components/Skeleton'
+import { SkeletonTransactionList, SkeletonStatGrid } from '../components/Skeleton'
 import Select from '../components/Select'
 import DatePicker from '../components/DatePicker'
+import MonthNav from '../components/MonthNav'
 
 function formatDateHeader(dateStr) {
   const date = new Date(dateStr + 'T00:00:00')
@@ -27,6 +28,12 @@ function formatDateHeader(dateStr) {
   return new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date)
 }
 
+// Jumlah hari inklusif antara dua tanggal 'YYYY-MM-DD' (aman dari DST)
+function daysBetween(a, b) {
+  const [ay, am, ad] = a.split('-').map(Number)
+  const [by, bm, bd] = b.split('-').map(Number)
+  return Math.round((Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)) / 86400000) + 1
+}
 
 export default function Transactions() {
   const { user } = useAuth()
@@ -134,17 +141,6 @@ export default function Transactions() {
 
   function handleEdit(tx) { setEditData(tx); setShowModal(true) }
 
-  function prevMonth() {
-    setMonthYear(({ month, year }) => month === 1 ? { month: 12, year: year - 1 } : { month: month - 1, year })
-  }
-  function nextMonth() {
-    const now = getCurrentMonth()
-    setMonthYear(({ month, year }) => {
-      if (year === now.year && month === now.month) return { month, year }
-      return month === 12 ? { month: 1, year: year + 1 } : { month: month + 1, year }
-    })
-  }
-
   const filtered = transactions.filter(t => {
     if (filterType !== 'all' && t.type !== filterType) return false
     if (filterCat !== 'all' && t.category_id !== filterCat) return false
@@ -158,6 +154,30 @@ export default function Transactions() {
   const totalIncome = filtered.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
   const totalExpense = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
   const totalNet = totalIncome - totalExpense
+
+    // ── Rata-rata harian, mengikuti filter ──────────────────
+  // Jenis "Pemasukan" → rata-rata pemasukan; selain itu → rata-rata pengeluaran
+  const avgIsIncome = filterType === 'income'
+  const avgTotal = avgIsIncome ? totalIncome : totalExpense
+
+  const mm = String(month).padStart(2, '0')
+  const monthStart = `${year}-${mm}-01`
+  const monthEnd = `${year}-${mm}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`
+  const today = todayStr()
+  const isCurrentMonth = today >= monthStart && today <= monthEnd
+
+  // Rentang hari efektif = irisan (bulan yang dilihat) ∩ (filter Dari/Sampai)
+  const rangeStart = dateFrom && dateFrom > monthStart ? dateFrom : monthStart
+  let rangeEnd = dateTo && dateTo < monthEnd ? dateTo : monthEnd
+  if (isCurrentMonth && rangeEnd > today) rangeEnd = today // bulan berjalan: hanya sampai hari ini
+
+  const avgDays = rangeStart <= rangeEnd ? daysBetween(rangeStart, rangeEnd) : 0
+  const avgPerDay = avgDays > 0 ? Math.round(avgTotal / avgDays) : 0
+  const avgHint = (dateFrom || dateTo)
+    ? `Dihitung ${avgDays} hari sesuai rentang tanggal filter`
+    : isCurrentMonth
+      ? `Dihitung ${avgDays} hari berjalan bulan ini`
+      : `Dihitung ${avgDays} hari penuh di bulan ini`
 
   const groups = {}
   filtered.forEach(tx => { if (!groups[tx.date]) groups[tx.date] = []; groups[tx.date].push(tx) })
@@ -203,10 +223,8 @@ export default function Transactions() {
         </button>
       </div>
 
-      <div className="month-nav" style={{ marginBottom: 24 }}>
-        <button className="month-nav-btn" onClick={prevMonth}><ChevronLeft size={16} /></button>
-        <span className="month-name">{getMonthName(month, year)}</span>
-        <button className="month-nav-btn" onClick={nextMonth}><ChevronRight size={16} /></button>
+      <div style={{ marginBottom: 24 }}>
+        <MonthNav month={month} year={year} onChange={setMonthYear} />
       </div>
 
       {/* Filters */}
@@ -258,23 +276,32 @@ export default function Transactions() {
       </div>
 
       {/* Summary stats */}
-      <div className="stat-grid-3" style={{ marginBottom: 20 }}>
-        <div className="stat-card" style={{ padding: '14px 16px' }}>
-          <div className="stat-label">Pemasukan</div>
-          <div className="stat-value green" style={{ fontSize: 18 }}>{formatRupiah(totalIncome)}</div>
-          <div className="stat-sub">{filtered.filter(t => t.type === 'income').length} transaksi</div>
+      {loading ? (
+        <SkeletonStatGrid />
+      ) : (
+        <div className="stat-grid">
+          <div className="stat-card">
+            <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><TrendingUp size={11} style={{ color: 'var(--green)' }} /> Pemasukan</div>
+            <div className="stat-value green">{formatRupiah(totalIncome)}</div>
+            <div className="stat-sub">{filtered.filter(t => t.type === 'income').length} transaksi</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><TrendingDown size={11} style={{ color: 'var(--red)' }} /> Pengeluaran</div>
+            <div className="stat-value red">{formatRupiah(totalExpense)}</div>
+            <div className="stat-sub">{filtered.filter(t => t.type === 'expense').length} transaksi</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Wallet size={11} /> Selisih</div>
+            <div className={`stat-value ${totalNet >= 0 ? 'green' : 'red'}`}>{formatRupiah(totalNet)}</div>
+            <div className="stat-sub">{filtered.length} total transaksi</div>
+          </div>
+          <div className="stat-card" title={avgHint}>
+            <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Activity size={11} /> Rata-rata/Hari</div>
+            <div className="stat-value gold">{formatRupiah(avgPerDay)}</div>
+            <div className="stat-sub">{avgIsIncome ? 'Pemasukan' : 'Pengeluaran'} · {avgDays} hari</div>
+          </div>
         </div>
-        <div className="stat-card" style={{ padding: '14px 16px' }}>
-          <div className="stat-label">Pengeluaran</div>
-          <div className="stat-value red" style={{ fontSize: 18 }}>{formatRupiah(totalExpense)}</div>
-          <div className="stat-sub">{filtered.filter(t => t.type === 'expense').length} transaksi</div>
-        </div>
-        <div className="stat-card" style={{ padding: '14px 16px' }}>
-          <div className="stat-label">Selisih</div>
-          <div className={`stat-value ${totalNet >= 0 ? 'green' : 'red'}`} style={{ fontSize: 18 }}>{formatRupiah(totalNet)}</div>
-          <div className="stat-sub">{filtered.length} total transaksi</div>
-        </div>
-      </div>
+      )}
 
       {/* Grouped list */}
       {loading ? <SkeletonTransactionList count={3} /> : sortedDates.length === 0 ? (

@@ -130,3 +130,21 @@
   .sel-pop, .sel-sheet, .sel-backdrop { animation: none; }
   .sel-trigger, .sel-chev, .sel-opt { transition: none; }
 }
+
+/* ── Feedback pilihan ── */
+.sel-opt { transition: background 0.12s, color 0.12s, transform 0.12s; }
+.sel-opt:active { transform: scale(0.98); }
+.sel-opt.is-pick { background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+.sel-opt.is-pick .sel-check { animation: selCheck 0.22s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes selCheck { from { transform: scale(0); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.sel-trigger:active:not(:disabled) { transform: scale(0.99); }
+.sel-trigger.is-flash { animation: selFlash 0.7s ease; }
+@keyframes selFlash {
+  0%   { border-color: var(--accent); box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.45); }
+  100% { border-color: var(--border); box-shadow: 0 0 0 9px rgba(245, 166, 35, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sel-opt.is-pick .sel-check, .sel-trigger.is-flash { animation: none; }
+}

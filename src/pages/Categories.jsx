@@ -6,6 +6,7 @@ import { useConfirm } from '../contexts/ConfirmContext'
 import { PlusCircle, Pencil, Trash2, X, ArrowDownLeft, ArrowUpRight, Layers, Tag } from 'lucide-react'
 import { CategoryIcon, CATEGORY_ICON_MAP, CATEGORY_ICON_LIST, migrateIconName } from '../components/CategoryIcon'
 import { SkeletonCategoryList } from '../components/Skeleton'
+import ColorPicker from '../components/ColorPicker'
 
 const COLORS = ['#f5a623','#4ade80','#60a5fa','#f472b6','#a78bfa','#ef4444','#06b6d4','#fbbf24','#f97316','#84cc16','#34d399','#e879f9']
 
@@ -68,7 +69,7 @@ function CategoryModal({ data, onClose, onSaved }) {
                 const IconComp = CATEGORY_ICON_MAP[iconName]
                 const isActive = icon === iconName
                 return (
-                  <button key={iconName} type="button" onClick={() => setIcon(iconName)} title={iconName} style={{
+                  <button key={iconName} type="button" className="pick-opt" onClick={() => setIcon(iconName)} title={iconName} style={{
                     width: 36, height: 36, borderRadius: 8,
                     border: `2px solid ${isActive ? color : 'var(--border)'}`,
                     background: isActive ? `${color}20` : 'var(--bg-card2)',
@@ -83,15 +84,7 @@ function CategoryModal({ data, onClose, onSaved }) {
           </div>
           <div className="form-group">
             <label className="form-label">Warna</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {COLORS.map(c => (
-                <button key={c} type="button" onClick={() => setColor(c)} style={{
-                  width: 28, height: 28, borderRadius: '50%', background: c,
-                  border: `2px solid ${color === c ? 'white' : 'transparent'}`,
-                  cursor: 'pointer', transition: 'all 0.1s'
-                }} />
-              ))}
-            </div>
+            <ColorPicker value={color} onChange={setColor} colors={COLORS} />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" className="btn btn-ghost" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>Batal</button>

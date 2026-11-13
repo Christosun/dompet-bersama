@@ -4,10 +4,11 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
-import { ChevronLeft, ChevronRight, PlusCircle, X, Pencil, Copy, Target, AlertTriangle, Tag, Wallet } from 'lucide-react'
+import { PlusCircle, X, Pencil, Copy, Target, AlertTriangle, Tag, Wallet } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
 import { SkeletonBudgetList, SkeletonStatGrid } from '../components/Skeleton'
 import Select from '../components/Select'
+import MonthNav from '../components/MonthNav'
 
 function BudgetModal({ data, categories, month, year, onClose, onSaved }) {
   const { user } = useAuth()
@@ -171,17 +172,6 @@ export default function Budget() {
   const totalSpent = budgets.reduce((s, b) => s + (spending[b.category_id] || 0), 0)
   const totalLeft = totalBudget - totalSpent
 
-  function prevMonth() {
-    setMonthYear(({ month, year }) => month === 1 ? { month: 12, year: year - 1 } : { month: month - 1, year })
-  }
-  function nextMonth() {
-    const now = getCurrentMonth()
-    setMonthYear(({ month, year }) => {
-      if (year === now.year && month === now.month) return { month, year }
-      return month === 12 ? { month: 1, year: year + 1 } : { month: month + 1, year }
-    })
-  }
-
   function getBarColor(pct) {
     if (pct >= 100) return 'var(--red)'
     if (pct >= 80) return '#f59e0b'
@@ -209,10 +199,8 @@ export default function Budget() {
         </div>
       </div>
 
-      <div className="month-nav" style={{ marginBottom: 24 }}>
-        <button className="month-nav-btn" onClick={prevMonth}><ChevronLeft size={16} /></button>
-        <span className="month-name">{getMonthName(month, year)}</span>
-        <button className="month-nav-btn" onClick={nextMonth}><ChevronRight size={16} /></button>
+      <div style={{ marginBottom: 24 }}>
+        <MonthNav month={month} year={year} onChange={setMonthYear} />
       </div>
 
       {loading ? (

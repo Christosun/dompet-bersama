@@ -3,13 +3,14 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { formatRupiah, formatShortDate, getCurrentMonth, getMonthName } from '../lib/utils'
 import Avatar from '../components/Avatar'
-import { PlusCircle, ChevronLeft, ChevronRight, Wallet, TrendingUp, TrendingDown, Activity, Receipt, BarChart2, PieChart as PieChartIcon, AlertTriangle, CheckCircle, Zap } from 'lucide-react'
+import { PlusCircle, Wallet, TrendingUp, TrendingDown, Activity, Receipt, BarChart2, PieChart as PieChartIcon, AlertTriangle, CheckCircle, Zap } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
 import TransactionModal from '../components/TransactionModal'
 import CalendarHeatmap from '../components/CalendarHeatmap'
 import { SkeletonStatGrid, SkeletonTransactionList } from '../components/Skeleton'
 import { Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from 'recharts'
 import CategoryDonut from '../components/CategoryDonut'
+import MonthNav from '../components/MonthNav'
 
 const TOOLTIP_STYLE = {
   background: '#1a1d24',
@@ -233,17 +234,6 @@ export default function Dashboard() {
   })
   const dailyData = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date)).slice(-10).map(d => ({ ...d, label: formatShortDate(d.date) }))
 
-  function prevMonth() {
-    setMonthYear(({ month, year }) => month === 1 ? { month: 12, year: year - 1 } : { month: month - 1, year })
-  }
-  function nextMonth() {
-    const now = getCurrentMonth()
-    setMonthYear(({ month, year }) => {
-      if (year === now.year && month === now.month) return { month, year }
-      return month === 12 ? { month: 1, year: year + 1 } : { month: month + 1, year }
-    })
-  }
-
   const allDates = [...new Set(transactions.map(t => t.date))].sort((a, b) => b.localeCompare(a))
   const recentTransactions = transactions.filter(t => allDates.slice(0, 5).includes(t.date))
 
@@ -259,10 +249,8 @@ export default function Dashboard() {
         </button>
       </div>
 
-      <div className="month-nav" style={{ marginBottom: 24 }}>
-        <button className="month-nav-btn" onClick={prevMonth}><ChevronLeft size={16} /></button>
-        <span className="month-name">{getMonthName(month, year)}</span>
-        <button className="month-nav-btn" onClick={nextMonth}><ChevronRight size={16} /></button>
+      <div style={{ marginBottom: 24 }}>
+        <MonthNav month={month} year={year} onChange={setMonthYear} />
       </div>
 
       {loading ? (
@@ -287,7 +275,7 @@ export default function Dashboard() {
           <div className="stat-card">
             <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Activity size={11} /> Rata-rata/Hari</div>
             <div className="stat-value gold">{formatRupiah(Math.round(totalExpense / new Date(year, month, 0).getDate()))}</div>
-            <div className="stat-sub">Pengeluaran harian</div>
+            <div className="stat-sub">Per bulan · ÷ {new Date(year, month, 0).getDate()} hari</div>
           </div>
         </div>
       )}

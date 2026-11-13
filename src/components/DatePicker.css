@@ -54,6 +54,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 .dp-day.is-out { color: var(--text-muted); opacity: 0.45; }
+.dp-day.is-out:hover:not(:disabled):not(.is-sel) { background: var(--bg-card2); opacity: 0.8; }
 .dp-day.is-hi { background: var(--bg-card2); color: var(--text); }
 .dp-day.is-today { border-color: var(--border-hover); color: var(--accent); font-weight: 700; }
 .dp-day.is-sel,
@@ -105,3 +106,14 @@
 @media (prefers-reduced-motion: reduce) {
   .dp-day, .dp-month, .dp-nav, .dp-title, .dp-link { transition: none; }
 }
+
+.dp-day, .dp-month, .dp-nav, .dp-title, .dp-link { transition: background 0.12s, color 0.12s, border-color 0.12s, transform 0.12s; }
+.dp-day:active:not(:disabled),
+.dp-month:active:not(:disabled) { transform: scale(0.9); }
+.dp-nav:active, .dp-title:active { transform: scale(0.94); }
+.dp-link:active:not(:disabled) { transform: scale(0.96); }
+
+.dp-day.is-sel { animation: dpPop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 2px 10px var(--accent-glow); }
+@keyframes dpPop { from { transform: scale(0.8); } to { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) { .dp-day.is-sel { animation: none; } }
