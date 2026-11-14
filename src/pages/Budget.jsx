@@ -266,7 +266,7 @@ export default function Budget() {
           )}
 
           {budgets.length === 0 ? (
-            <div className="empty-state">
+            <div className="empty-state empty-fill">
               <div className="icon"><Target size={44} strokeWidth={1.2} /></div>
               <h3>Belum ada budget</h3>
               <p>Budget bulan lalu akan otomatis disalin saat berpindah bulan.<br />Atau klik <strong>Salin bulan lalu</strong> / <strong>Tambah Budget</strong> untuk memulai.</p>

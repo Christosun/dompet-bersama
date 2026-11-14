@@ -1047,7 +1047,7 @@ export default function Goals() {
           {activeTab === 'goals' && (
             <div>
               {goals.length === 0 ? (
-                <div className="empty-state">
+                <div className="empty-state empty-fill">
                   <div className="icon"><Trophy size={44} strokeWidth={1.2} /></div>
                   <h3>Belum ada goals</h3>
                   <p>Buat target keuangan pertama seperti dana darurat atau liburan impian</p>

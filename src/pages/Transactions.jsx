@@ -306,7 +306,7 @@ export default function Transactions() {
       {/* Grouped list */}
       {loading ? <SkeletonTransactionList count={3} /> : sortedDates.length === 0 ? (
         <div className="card">
-          <div className="empty-state">
+          <div className="empty-state empty-fill">
             <div className="icon"><SearchX size={44} strokeWidth={1.2} /></div>
             <h3>Tidak ada transaksi</h3>
             <p>Coba ubah filter atau tambah transaksi baru</p>

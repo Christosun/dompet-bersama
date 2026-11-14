@@ -11,6 +11,8 @@ import Budget from './pages/Budget'
 import Reports from './pages/Reports'
 import Goals from './pages/Goals'
 import Recurring from './pages/Recurring'
+import { useState, useEffect } from 'react'
+import Splash from './components/Splash'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -23,7 +25,27 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/auth" />
 }
 
+const SPLASH_MIN_MS = 1000   // lama minimal splash tampil
+const SPLASH_FADE_MS = 500   // harus sama dengan transisi di CSS
+
 export default function App() {
+  const { loading } = useAuth()
+  const [minDone, setMinDone] = useState(false)
+  const [gone, setGone] = useState(false)
+
+  useEffect(() => {
+    const t = setTimeout(() => setMinDone(true), SPLASH_MIN_MS)
+    return () => clearTimeout(t)
+  }, [])
+
+  const showSplash = loading || !minDone
+
+  useEffect(() => {
+    if (showSplash) return
+    const t = setTimeout(() => setGone(true), SPLASH_FADE_MS)
+    return () => clearTimeout(t)
+  }, [showSplash])
+
   return (
     <ToastProvider>
       <ConfirmProvider>
@@ -44,6 +66,7 @@ export default function App() {
           </Route>
         </Routes>
       </ConfirmProvider>
+      {!gone && <Splash leaving={!showSplash} />}
     </ToastProvider>
   )
 }

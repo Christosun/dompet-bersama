@@ -224,7 +224,7 @@ export default function Recurring() {
       </div>
 
       {loading ? <SkeletonRecurringList /> : items.length === 0 ? (
-        <div className="empty-state">
+        <div className="empty-state empty-fill">
           <div className="icon"><RefreshCw size={44} strokeWidth={1.2} /></div>
           <h3>Belum ada transaksi berulang</h3>
           <p>Cth: Cicilan bulanan, langganan streaming, gaji</p>

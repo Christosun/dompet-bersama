@@ -339,9 +339,7 @@ input[type="month"].form-input {
 
 .modal-backdrop {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.75);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(0,0,0,0.9);
   z-index: 1000;
   display: flex; align-items: center; justify-content: center;
   padding: 16px;
@@ -1034,93 +1032,132 @@ input[type="month"].form-input {
   .fab { display: none; }
 }
 
-
-
 /* ══════════════════════════════════════════
-   BACKGROUND FOTO
+   LATAR: gradasi emas di pojok kanan atas
 ══════════════════════════════════════════ */
 
-:root { --bg-card: rgba(19, 22, 25, 0.58); }
-
-/* Layer 1 — foto. Desktop: panel kanan setinggi layar */
 body::before {
-  content: '';
-  position: fixed;
-  top: 0; right: 0;
-  height: 100%;
-  width: min(100vw, 78vh);
-  z-index: -2;
-  pointer-events: none;
-  background: url('/bg/bg.webp') center 30% / cover no-repeat;
-  filter: saturate(0.85) brightness(0.8) contrast(1.05);
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 45%);
-  mask-image: linear-gradient(to right, transparent 0%, #000 45%);
-  transform: translateZ(0);
-}
-
-/* Layer 2 — overlay gelap + glow emas, menyatukan foto dengan tema */
-body::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(ellipse at 80% 15%, rgba(245,166,35,0.10) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(13,15,20,0.35) 0%, rgba(13,15,20,0.75) 60%, rgba(13,15,20,0.95) 100%);
+  background: radial-gradient(
+    circle min(900px, 100vw) at 100% 0%,
+    rgba(245,166,35,0.30) 0%,
+    rgba(245,166,35,0.25) 12%,
+    rgba(245,166,35,0.18) 28%,
+    rgba(245,166,35,0.11) 45%,
+    rgba(245,166,35,0.055) 62%,
+    rgba(245,166,35,0.02) 80%,
+    rgba(245,166,35,0) 100%
+  );
 }
 
-/* Kartu jadi "kaca" */
-.card, .stat-card {
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-}
-
-/* Modal & toast tetap solid agar mudah dibaca */
-.modal { background: #131619; }
-
-/* Sidebar semi-transparan */
-.sidebar {
-  background: linear-gradient(180deg, rgba(24,27,36,0.88) 0%, rgba(19,22,25,0.9) 60%, rgba(16,19,24,0.92) 100%);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-}
-
-/* Halaman login: hapus warna solid, foto tampil lebih jelas */
-.auth-page {
-  background:
-    radial-gradient(ellipse at 15% 50%, rgba(245,166,35,0.08) 0%, transparent 55%);
-}
-body:has(.auth-page)::before { filter: saturate(0.9) brightness(0.95) contrast(1.05); }
-body:has(.auth-page)::after {
-  background:
-    radial-gradient(ellipse at 80% 15%, rgba(245,166,35,0.10) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(13,15,20,0.15) 0%, rgba(13,15,20,0.6) 55%, rgba(13,15,20,0.92) 100%);
-}
-
-/* Perbaikan: form login di desktop kembali di tengah layar */
+/* Halaman login: form tetap di tengah layar di desktop */
+.auth-page { background: none; }
 @media (min-width: 769px) {
   .auth-page { justify-content: center; }
 }
 
+/* ══════════════════════════════════════════
+   SPLASH (foto hanya tampil di sini)
+══════════════════════════════════════════ */
+
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  transition: opacity 0.5s ease, visibility 0s 0.5s;
+}
+.splash.is-leaving { opacity: 0; visibility: hidden; pointer-events: none; }
+
+/* Foto: desktop = panel kanan */
+.splash::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  height: 100%;
+  width: min(100vw, 78vh);
+  background: url('/bg/bg.webp') center 30% / cover no-repeat;
+  filter: saturate(0.9) brightness(0.9) contrast(1.05);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 45%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 45%);
+}
+.splash::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 80% 15%, rgba(245,166,35,0.10) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(13,15,20,0.25) 0%, rgba(13,15,20,0.65) 60%, rgba(13,15,20,0.9) 100%);
+}
+
+.splash-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0 24px;
+  text-align: center;
+  animation: splashIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.splash-logo {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.splash-names {
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-sub);
+}
+.splash-bar {
+  margin-top: 22px;
+  width: 120px;
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.1);
+  overflow: hidden;
+}
+.splash-bar span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--gold-gradient);
+  animation: splashBar 1.2s ease-in-out infinite;
+}
+
+@keyframes splashIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes splashBar { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+
 /* Mobile: foto memenuhi layar, memudar ke bawah */
 @media (max-width: 768px) {
-  body::before {
+  .splash::before {
     width: 100%;
     background-position: center top;
     -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
     mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
   }
-  .mobile-topbar {
-    background: rgba(19,22,25,0.85);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-  }
-  .mobile-bottom-nav {
-    background: rgba(19,22,25,0.9);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-  }
+  .splash-logo { font-size: 26px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash { transition: none; }
+  .splash-content, .splash-bar span { animation: none; }
 }
 
 /* ══════════════════════════════
@@ -1205,8 +1242,7 @@ body:has(.auth-page)::after {
 @media (max-width: 768px) {
   .export-backdrop {
     display: block; position: fixed; inset: 0; z-index: 1000;
-    background: rgba(0,0,0,0.72);
-    -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+    background: rgba(0,0,0,0.9);
     animation: fadeIn 0.15s ease;
   }
   .export-panel {
@@ -1309,9 +1345,7 @@ select.form-input {
   .modal-backdrop,
   .sel-layer .sel-backdrop,
   .export-backdrop {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background: rgba(0, 0, 0, 0.78);
+    background: rgba(0, 0, 0, 0.9);
     animation: fadeIn 0.15s ease;
   }
 
@@ -1395,4 +1429,43 @@ select.form-input {
   text-transform: uppercase;
   color: var(--text-muted);
   animation: fadeIn 0.4s ease 0.3s both;
+}
+
+/* ══════════════════════════════
+   EMPTY STATE: tengah di sisa area konten
+══════════════════════════════ */
+
+/* Area konten jadi kolom flex, supaya halaman bisa mengisi tinggi layar */
+.main-content { display: flex; flex-direction: column; }
+.main-content > * { min-width: 0; }
+
+/* Setiap pembungkus yang berisi .empty-fill ikut meneruskan tinggi ke bawah
+   (root halaman, wrapper tab, atau .card) */
+.main-content div:has(.empty-fill) {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.empty-state.empty-fill {
+  flex: 1 0 auto;
+  min-height: 320px;              /* di layar pendek tetap lega, halaman boleh di-scroll */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.empty-state.empty-fill > p {
+  max-width: 440px;
+  margin: 0 auto;
+  text-wrap: balance;
+}
+
+@media (max-width: 768px) {
+  .empty-state.empty-fill {
+    min-height: 260px;
+    padding: 24px 12px 48px;      /* sedikit naik agar tidak tertutup FAB / bottom nav */
+  }
 }
