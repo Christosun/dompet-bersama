@@ -1489,3 +1489,8 @@ select.form-input {
   gap: 5px;
 }
 .stat-label > svg { flex-shrink: 0; }
+
+/* ── Ikon label stat: warna mengikuti warna angkanya ── */
+.stat-card:has(.stat-value.green) .stat-label > svg { color: var(--green); }
+.stat-card:has(.stat-value.red)   .stat-label > svg { color: var(--red); }
+.stat-card:has(.stat-value.gold)  .stat-label > svg { color: var(--accent); }
