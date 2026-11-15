@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatRupiah, getCurrentMonth, getMonthName } from '../lib/utils'
 import { shiftMonth as subtractMonths, shortMonthName } from '../lib/months'
-import { TrendingUp, TrendingDown, Minus, PieChart as PieChartIcon, Info, Wallet, Receipt } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, PieChart as PieChartIcon, Info, Wallet, Receipt, BarChart2, Activity, Users, Flame } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
@@ -386,7 +386,7 @@ export default function Reports() {
           <div className="grid-2 stack-md">
             <div className="card">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', minHeight: 36, marginBottom: 14 }}>
-                <div className="section-title" style={{ margin: 0 }}>Aktivitas Harian</div>
+                <div className="section-title" style={{ margin: 0 }}><BarChart2 size={12} /> Aktivitas Harian</div>
                 <div className="type-toggle" style={{ minWidth: 0 }}>
                   <button
                     type="button"
@@ -439,7 +439,7 @@ export default function Reports() {
 
             <div className="card">
               <div style={{ display: 'flex', alignItems: 'center', minHeight: 36, marginBottom: 14 }}>
-                <div className="section-title" style={{ margin: 0 }}>Komposisi Pengeluaran</div>
+                <div className="section-title" style={{ margin: 0 }}><PieChartIcon size={12} /> Komposisi Pengeluaran</div>
               </div>
 
               <div style={{ minHeight: 232, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -460,7 +460,7 @@ export default function Reports() {
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18, gap: 16, flexWrap: 'wrap' }}>
               <div style={{ minWidth: 0, flex: '1 1 220px' }}>
-                <div className="section-title" style={{ marginBottom: 4 }}>Akumulasi Pengeluaran</div>
+                <div className="section-title" style={{ marginBottom: 4 }}><Activity size={12} /> Akumulasi Pengeluaran</div>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
                   {compare.subtitle}
                 </p>
@@ -649,7 +649,7 @@ export default function Reports() {
           {/* Per person */}
           {personData.length > 0 && (
             <div className="card">
-              <div className="section-title">Kontribusi per Orang</div>
+              <div className="section-title"><Users size={12} /> Kontribusi per Orang</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
                 {personData.map(p => (
                   <div key={p.name} style={{ padding: '14px 16px', background: 'var(--bg-card2)', borderRadius: 12 }}>
@@ -670,7 +670,7 @@ export default function Reports() {
           {/* Top expenses */}
           {topExpenses.length > 0 && (
             <div className="card">
-              <div className="section-title">Pengeluaran Terbesar</div>
+              <div className="section-title"><Flame size={12} /> Pengeluaran Terbesar</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                 {topExpenses.map((t, i) => (
                   <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < topExpenses.length - 1 ? '1px solid var(--border)' : 'none' }}>

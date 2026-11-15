@@ -383,7 +383,12 @@ function FinalizeModal({ month, year, income, expense, loading, onClose, onConfi
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: net >= 0 ? 'rgba(245,166,35,0.08)' : 'rgba(248,113,113,0.08)', border: `1px solid ${net >= 0 ? 'rgba(245,166,35,0.3)' : 'rgba(248,113,113,0.3)'}`, borderRadius: 12 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)' }}>
-              {net >= 0 ? '✨ Bisa Ditabung' : '⚠️ Defisit Bulan Ini'}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {net >= 0
+                  ? <PiggyBank size={14} color="var(--accent)" />
+                  : <AlertCircle size={14} color="var(--red)" />}
+                {net >= 0 ? 'Bisa Ditabung' : 'Defisit Bulan Ini'}
+              </span>
             </span>
             <span style={{ fontSize: 17, fontWeight: 800, color: net >= 0 ? 'var(--accent)' : 'var(--red)', letterSpacing: '-0.02em' }}>
               {net >= 0 ? '+' : ''}{formatRupiah(net)}
@@ -673,8 +678,10 @@ export default function Goals() {
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, flexWrap: 'wrap', gap: 4 }}>
               <span>{formatRupiah(g.current_amount || 0)} <span style={{ color: 'var(--text-sub)' }}>dari</span> {formatRupiah(g.target_amount)}</span>
               {daysLeft !== null && (
-                <span style={{ color: isUrgent ? 'var(--red)' : 'var(--text-muted)', fontWeight: isUrgent ? 600 : 400 }}>
-                  {daysLeft > 0 ? `⏱ ${daysLeft} hari lagi` : '🔴 Jatuh tempo!'}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: isUrgent ? 'var(--red)' : 'var(--text-muted)', fontWeight: isUrgent ? 600 : 400 }}>
+                  {daysLeft > 0
+                    ? <><Clock size={12} /> {daysLeft} hari lagi</>
+                    : <><AlertCircle size={12} /> Jatuh tempo!</>}
                 </span>
               )}
             </div>
@@ -698,7 +705,11 @@ export default function Goals() {
                 {g.deadline && <span>Deadline: <strong style={{ color: 'var(--text-sub)' }}>{new Date(g.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</strong></span>}
               </div>
             )}
-            {done && <div style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>🎉 Target tercapai!</div>}
+            {done && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>
+                <CheckCircle size={12} strokeWidth={2.5} /> Target tercapai!
+              </div>
+            )}
           </div>
 
           {/* Actions */}
@@ -937,7 +948,12 @@ export default function Goals() {
                         {/* Net savings result */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 14px', background: net >= 0 ? 'rgba(245,166,35,0.07)' : 'rgba(248,113,113,0.07)', border: `1px solid ${net >= 0 ? 'rgba(245,166,35,0.22)' : 'rgba(248,113,113,0.22)'}`, borderRadius: 10 }}>
                           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-sub)' }}>
-                            {net >= 0 ? '✨ Bisa Ditabung' : '⚠️ Defisit'}
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                              {net >= 0
+                                ? <PiggyBank size={14} color="var(--accent)" />
+                                : <AlertCircle size={14} color="var(--red)" />}
+                              {net >= 0 ? 'Bisa Ditabung' : 'Defisit'}
+                            </span>
                           </span>
                           <span style={{ fontSize: 17, fontWeight: 800, color: net >= 0 ? 'var(--accent)' : 'var(--red)', letterSpacing: '-0.02em' }}>
                             {net >= 0 ? '+' : ''}{formatRupiah(net)}
@@ -1067,7 +1083,7 @@ export default function Goals() {
                   )}
                   {activeGoals.length > 0 && (
                     <div>
-                      <div className="section-title">Sedang Berjalan ({activeGoals.length})</div>
+                      <div className="section-title"><Target size={12} /> Sedang Berjalan ({activeGoals.length})</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {activeGoals.map(g => <GoalCard key={g.id} g={g} />)}
                       </div>
@@ -1075,7 +1091,7 @@ export default function Goals() {
                   )}
                   {completedGoals.length > 0 && (
                     <div>
-                      <div className="section-title">Tercapai 🎉 ({completedGoals.length})</div>
+                      <div className="section-title"><CheckCircle size={12} /> Tercapai ({completedGoals.length})</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {completedGoals.map(g => <GoalCard key={g.id} g={g} />)}
                       </div>

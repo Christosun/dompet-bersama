@@ -147,10 +147,10 @@ export default function Categories() {
   const expenseCats = categories.filter(c => c.type === 'expense' || c.type === 'both')
   const incomeCats = categories.filter(c => c.type === 'income' || c.type === 'both')
 
-  function CatGroup({ title, items }) {
+  function CatGroup({ title, icon: Icon, items }) {
     return (
       <div>
-        <div className="section-title">{title}</div>
+        <div className="section-title"><Icon size={12} /> {title}</div>
         {loading ? <SkeletonCategoryList count={4} /> : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
             {items.map(c => (
@@ -189,8 +189,8 @@ export default function Categories() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-        <CatGroup title="Pengeluaran" items={expenseCats} />
-        <CatGroup title="Pemasukan" items={incomeCats} />
+        <CatGroup title="Pengeluaran" icon={ArrowDownLeft} items={expenseCats} />
+        <CatGroup title="Pemasukan" icon={ArrowUpRight} items={incomeCats} />
       </div>
 
       {showModal && (

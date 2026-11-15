@@ -3,11 +3,11 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { formatRupiah, formatShortDate, getCurrentMonth, getMonthName } from '../lib/utils'
 import Avatar from '../components/Avatar'
-import { PlusCircle, Wallet, TrendingUp, TrendingDown, Activity, Receipt, BarChart2, PieChart as PieChartIcon, AlertTriangle, CheckCircle, Zap } from 'lucide-react'
 import { CategoryIcon } from '../components/CategoryIcon'
 import TransactionModal from '../components/TransactionModal'
 import CalendarHeatmap from '../components/CalendarHeatmap'
 import { SkeletonStatGrid, SkeletonTransactionList, SkeletonChart, SkeletonDonut } from '../components/Skeleton'
+import { PlusCircle, Wallet, TrendingUp, TrendingDown, Activity, Receipt, BarChart2, PieChart as PieChartIcon, AlertTriangle, CheckCircle, Zap, Sunrise, Sun, Sunset, Moon, MoonStar, CalendarDays } from 'lucide-react'
 import { Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from 'recharts'
 import CategoryDonut from '../components/CategoryDonut'
 import MonthNav from '../components/MonthNav'
@@ -140,8 +140,7 @@ function SmartInsights({ transactions, budgets, spending }) {
   return (
     <div className="card" style={{ marginBottom: 20, padding: '16px 20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
-        <Zap size={14} color="var(--accent)" />
-        <span className="section-title" style={{ margin: 0 }}>Smart Insights</span>
+        <div className="section-title" style={{ margin: 0 }}><Zap size={12} /> Smart Insights</div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {insights.map((ins, i) => {
@@ -156,6 +155,15 @@ function SmartInsights({ transactions, budgets, spending }) {
       </div>
     </div>
   )
+}
+
+function getGreeting() {
+  const h = new Date().getHours()
+  if (h >= 4 && h < 11) return { text: 'Pagi yang tertata', Icon: Sunrise }
+  if (h >= 11 && h < 15) return { text: 'Siang yang cermat', Icon: Sun }
+  if (h >= 15 && h < 18) return { text: 'Sore yang tenang', Icon: Sunset }
+  if (h >= 18 && h < 23) return { text: 'Malam yang rapi', Icon: Moon }
+  return { text: 'Larut malam', Icon: MoonStar }
 }
 
 export default function Dashboard() {
@@ -236,12 +244,18 @@ export default function Dashboard() {
 
   const allDates = [...new Set(transactions.map(t => t.date))].sort((a, b) => b.localeCompare(a))
   const recentTransactions = transactions.filter(t => allDates.slice(0, 5).includes(t.date))
+  const greeting = getGreeting()
 
   return (
     <div>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 className="page-title">Selamat datang, {profile?.name?.split(' ')[0]} 👋</h1>
+          <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>
+              {greeting.text}{profile?.name ? `, ${profile.name.split(' ')[0]}` : ''}
+            </span>
+            <greeting.Icon size={22} color="var(--accent)" strokeWidth={2} style={{ flexShrink: 0 }} />
+          </h1>
           <p className="page-sub">Ringkasan keuangan bersama bulan ini</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowModal(true)}>
@@ -283,7 +297,7 @@ export default function Dashboard() {
       {/* Charts */}
       <div className="grid-2" style={{ marginBottom: 24 }}>
         <div className="card">
-          <div className="section-title">Tren Harian</div>
+          <div className="section-title"><BarChart2 size={12} /> Tren Harian</div>
           {loading ? <SkeletonChart /> :
             dailyData.length === 0 ? (
               <div className="empty-state" style={{ padding: '30px 0' }}><div className="icon"><BarChart2 size={36} strokeWidth={1.2} /></div><p>Belum ada data</p></div>
@@ -302,7 +316,7 @@ export default function Dashboard() {
         </div>
 
         <div className="card">
-          <div className="section-title">Pengeluaran per Kategori</div>
+          <div className="section-title"><PieChartIcon size={12} /> Pengeluaran per Kategori</div>
           <div style={{ minHeight: 232, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {loading ? <SkeletonDonut /> :
               pieData.length === 0 ? (
@@ -324,14 +338,14 @@ export default function Dashboard() {
       {/* Calendar Heatmap */}
       {!loading && transactions.length > 0 && (
         <div className="card" style={{ marginBottom: 24 }}>
-          <div className="section-title">Heatmap Pengeluaran — {getMonthName(month, year)}</div>
+          <div className="section-title"><CalendarDays size={12} /> Heatmap Pengeluaran — {getMonthName(month, year)}</div>
           <CalendarHeatmap transactions={transactions} month={month} year={year} />
         </div>
       )}
 
       {/* Recent transactions */}
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="section-title" style={{ margin: 0 }}>Transaksi Terakhir</div>
+        <div className="section-title" style={{ margin: 0 }}><Receipt size={12} /> Transaksi Terakhir</div>
         <a href="/transactions" style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>Lihat semua →</a>
       </div>
 
