@@ -139,24 +139,46 @@ export default function Budget() {
   }
 
   async function manualCopyOver() {
+    if (copyingOver) return
     setCopyingOver(true)
     const prevMonth = month === 1 ? 12 : month - 1
     const prevYear = month === 1 ? year - 1 : year
+    const prevLabel = getMonthName(prevMonth, prevYear)
 
-    const { data: prevBudgets } = await supabase.from('budgets').select('*').eq('month', prevMonth).eq('year', prevYear)
+    const { data: prevBudgets, error } = await supabase
+      .from('budgets').select('*').eq('month', prevMonth).eq('year', prevYear)
+    if (error) {
+      toast.error('Gagal memuat budget: ' + error.message)
+      setCopyingOver(false)
+      return
+    }
     if (!prevBudgets || prevBudgets.length === 0) {
-      toast.warning(`Tidak ada budget di ${getMonthName(prevMonth, prevYear)} untuk disalin.`)
+      toast.warning(`Tidak ada budget di ${prevLabel} untuk disalin.`)
       setCopyingOver(false)
       return
     }
 
+    // Kategori yang sudah punya budget di bulan ini akan ditimpa (upsert)
+    const existing = new Set(budgets.map(b => b.category_id))
+    const overlap = prevBudgets.filter(b => existing.has(b.category_id)).length
+
+    const ok = await confirm({
+      title: 'Salin Budget',
+      message: `${prevBudgets.length} budget dari ${prevLabel} akan disalin ke ${getMonthName(month, year)}.` +
+        (overlap > 0 ? ` ${overlap} kategori yang sudah punya budget bulan ini akan ditimpa nilainya.` : ''),
+      confirmLabel: 'Salin',
+      tone: 'primary',
+    })
+    if (!ok) { setCopyingOver(false); return }
+
     const newBudgets = prevBudgets.map(b => ({
       user_id: user.id, category_id: b.category_id, amount: b.amount, month, year,
     }))
-
-    await supabase.from('budgets').upsert(newBudgets, { onConflict: 'category_id,month,year' })
-    toast.success(`Budget ${getMonthName(prevMonth, prevYear)} berhasil disalin`)
+    const { error: upErr } = await supabase.from('budgets').upsert(newBudgets, { onConflict: 'category_id,month,year' })
     setCopyingOver(false)
+    if (upErr) { toast.error('Gagal menyalin: ' + upErr.message); return }
+
+    toast.success(`Budget ${prevLabel} berhasil disalin`)
     loadData()
   }
 

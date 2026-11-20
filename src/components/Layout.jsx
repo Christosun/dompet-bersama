@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useConfirm } from '../contexts/ConfirmContext'
@@ -23,6 +23,16 @@ export default function Layout() {
   const navigate = useNavigate()
   const confirm = useConfirm()
   const [showQuickAdd, setShowQuickAdd] = useState(false)
+  const sidebarRef = useRef(null)
+
+  // Sidebar yang tidak bisa di-scroll tidak boleh menggulung halaman utama
+  useEffect(() => {
+    const el = sidebarRef.current
+    if (!el) return
+    const onWheel = e => { if (el.scrollHeight <= el.clientHeight) e.preventDefault() }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
 
   async function handleSignOut() {
     const ok = await confirm({ title: 'Keluar', message: 'Yakin ingin keluar dari aplikasi?', confirmLabel: 'Keluar' })
@@ -34,7 +44,7 @@ export default function Layout() {
   return (
     <div className="app-layout">
       {/* Desktop Sidebar */}
-      <aside className="sidebar">
+      <aside className="sidebar" ref={sidebarRef}>
         <div className="sidebar-logo">
           Dompet Bersama Eto & Noni
           <span>Keuangan Rumah Tangga</span>

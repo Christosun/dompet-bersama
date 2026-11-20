@@ -856,7 +856,7 @@ input[type="month"].form-input {
 
   .modal {
     border-radius: 20px 20px 0 0;
-    max-width: 100%;
+    max-width: 100% !important;   /* menimpa maxWidth inline dari tiap modal */
     max-height: 92vh;
     max-height: 92dvh;
     padding: 24px 20px;
@@ -1494,3 +1494,8 @@ select.form-input {
 .stat-card:has(.stat-value.green) .stat-label > svg { color: var(--green); }
 .stat-card:has(.stat-value.red)   .stat-label > svg { color: var(--red); }
 .stat-card:has(.stat-value.gold)  .stat-label > svg { color: var(--accent); }
+
+.sidebar {
+  /* ...yang sudah ada... */
+  overscroll-behavior: contain;
+}
