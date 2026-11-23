@@ -11,6 +11,7 @@ import { PlusCircle, Wallet, TrendingUp, TrendingDown, Activity, Receipt, BarCha
 import { Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from 'recharts'
 import CategoryDonut from '../components/CategoryDonut'
 import MonthNav from '../components/MonthNav'
+import { TxNote, useNoteDialog } from '../components/NoteDialog'
 
 const TOOLTIP_STYLE = {
   background: '#1a1d24',
@@ -33,66 +34,70 @@ function formatDateHeader(dateStr) {
 }
 
 function GroupedTransactions({ transactions, profiles }) {
+  const { onRowClick, dialog } = useNoteDialog()
   const groups = {}
   transactions.forEach(tx => { if (!groups[tx.date]) groups[tx.date] = []; groups[tx.date].push(tx) })
   const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a))
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {sortedDates.map(date => {
-        const txs = groups[date]
-        const dayIncome = txs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
-        const dayExpense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
-        const dayNet = dayIncome - dayExpense
+    <>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {sortedDates.map(date => {
+          const txs = groups[date]
+          const dayIncome = txs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
+          const dayExpense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
+          const dayNet = dayIncome - dayExpense
 
-        return (
-          <div key={date} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 16px', background: 'var(--bg-card2)', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', gap: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{formatDateHeader(date)}</span>
-                <span style={{ fontSize: 11, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 99, padding: '2px 8px', color: 'var(--text-muted)' }}>
-                  {txs.length} transaksi
-                </span>
+          return (
+            <div key={date} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 16px', background: 'var(--bg-card2)', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{formatDateHeader(date)}</span>
+                  <span style={{ fontSize: 11, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 99, padding: '2px 8px', color: 'var(--text-muted)' }}>
+                    {txs.length} transaksi
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {dayIncome > 0 && <span style={{ fontSize: 12, color: 'var(--green)' }}>+{formatRupiah(dayIncome)}</span>}
+                  {dayExpense > 0 && <span style={{ fontSize: 12, color: 'var(--red)' }}>-{formatRupiah(dayExpense)}</span>}
+                  <span style={{ fontSize: 12, fontWeight: 600, color: dayNet >= 0 ? 'var(--green)' : 'var(--red)', paddingLeft: 6, borderLeft: '1px solid var(--border)' }}>
+                    {dayNet >= 0 ? '+' : ''}{formatRupiah(dayNet)}
+                  </span>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                {dayIncome > 0 && <span style={{ fontSize: 12, color: 'var(--green)' }}>+{formatRupiah(dayIncome)}</span>}
-                {dayExpense > 0 && <span style={{ fontSize: 12, color: 'var(--red)' }}>-{formatRupiah(dayExpense)}</span>}
-                <span style={{ fontSize: 12, fontWeight: 600, color: dayNet >= 0 ? 'var(--green)' : 'var(--red)', paddingLeft: 6, borderLeft: '1px solid var(--border)' }}>
-                  {dayNet >= 0 ? '+' : ''}{formatRupiah(dayNet)}
-                </span>
-              </div>
-            </div>
-            <div>
-              {txs.map((tx, i) => {
-                const who = profiles[tx.user_id]
-                return (
-                  <div key={tx.id} className="tx-item" style={{ borderBottom: i < txs.length - 1 ? '1px solid var(--border)' : 'none', borderRadius: 0, padding: '10px 16px' }}>
-                    <div className="tx-icon" style={{ background: `${tx.categories?.color || '#6b7280'}20` }}>
-                      <CategoryIcon icon={tx.categories?.icon} size={17} color={tx.categories?.color || 'var(--text-muted)'} />
-                    </div>
-                    <div className="tx-info">
-                      <div className="tx-cat">{tx.categories?.name || 'Tidak diketahui'}</div>
-                      <div className="tx-note">{tx.note || '—'}</div>
-                    </div>
-                    <div className="tx-meta">
-                      <div className={`tx-amount ${tx.type === 'income' ? 'pos' : 'neg'}`}>
-                        {tx.type === 'income' ? '+' : '-'}{formatRupiah(tx.amount)}
+              <div>
+                {txs.map((tx, i) => {
+                  const who = profiles[tx.user_id]
+                  return (
+                    <div key={tx.id} className="tx-item" onClick={e => onRowClick(e, tx, who)} style={{ borderBottom: i < txs.length - 1 ? '1px solid var(--border)' : 'none', borderRadius: 0, padding: '10px 16px' }}>
+                      <div className="tx-icon" style={{ background: `${tx.categories?.color || '#6b7280'}20` }}>
+                        <CategoryIcon icon={tx.categories?.icon} size={17} color={tx.categories?.color || 'var(--text-muted)'} />
                       </div>
-                      {who && (
-                        <div className="tx-who">
-                          <Avatar name={who.name} size={16} tooltip />
-                          {who.name.split(' ')[0]}
+                      <div className="tx-info">
+                        <div className="tx-cat">{tx.categories?.name || 'Tidak diketahui'}</div>
+                        <TxNote text={tx.note} fallback="—" />
+                      </div>
+                      <div className="tx-meta">
+                        <div className={`tx-amount ${tx.type === 'income' ? 'pos' : 'neg'}`}>
+                          {tx.type === 'income' ? '+' : '-'}{formatRupiah(tx.amount)}
                         </div>
-                      )}
+                        {who && (
+                          <div className="tx-who">
+                            <Avatar name={who.name} size={16} tooltip />
+                            {who.name.split(' ')[0]}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+      {dialog}
+    </>
   )
 }
 

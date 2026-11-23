@@ -1499,3 +1499,7 @@ select.form-input {
   /* ...yang sudah ada... */
   overscroll-behavior: contain;
 }
+
+/* Baris dengan catatan terpotong bisa diketuk untuk melihat teks lengkap */
+.tx-item.is-cut { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.tx-item.is-cut:active { background: var(--bg-card2); }

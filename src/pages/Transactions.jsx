@@ -12,6 +12,7 @@ import { SkeletonTransactionList, SkeletonStatGrid } from '../components/Skeleto
 import Select from '../components/Select'
 import DatePicker from '../components/DatePicker'
 import MonthNav from '../components/MonthNav'
+import { TxNote, useNoteDialog } from '../components/NoteDialog'
 
 function formatDateHeader(dateStr) {
   const date = new Date(dateStr + 'T00:00:00')
@@ -54,6 +55,7 @@ export default function Transactions() {
   const [dateTo, setDateTo] = useState('')
   const [search, setSearch] = useState('')
   const [showFilters, setShowFilters] = useState(() => window.innerWidth > 768)
+  const { onRowClick, dialog } = useNoteDialog()
 
   const realtimeRef = useRef(null)
   const loadAllRef = useRef(null)
@@ -346,6 +348,7 @@ export default function Transactions() {
                       <div
                         key={tx.id}
                         className="tx-item"
+                        onClick={e => onRowClick(e, tx, who)}
                         style={{ borderBottom: i < txs.length - 1 ? '1px solid var(--border)' : 'none', borderRadius: 0, padding: '10px 16px', gap: 12 }}
                       >
                         <div className="tx-icon" style={{ background: `${tx.categories?.color || '#6b7280'}20` }}>
@@ -353,7 +356,7 @@ export default function Transactions() {
                         </div>
                         <div className="tx-info">
                           <div className="tx-cat">{tx.categories?.name || 'Tidak diketahui'}</div>
-                          <div className="tx-note">{tx.note && <span style={{ marginRight: 6 }}>{tx.note}</span>}</div>
+                          <TxNote text={tx.note} />
                         </div>
                         <div className="tx-meta">
                           <div className={`tx-amount ${tx.type === 'income' ? 'pos' : 'neg'}`}>
@@ -385,6 +388,7 @@ export default function Transactions() {
       {showModal && (
         <TransactionModal onClose={() => { setShowModal(false); setEditData(null) }} onSaved={loadAll} editData={editData} />
       )}
+      {dialog}
     </div>
   )
 }
